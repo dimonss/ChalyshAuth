@@ -1,0 +1,7 @@
+node_modules/
+dist/
+data/
+.idea
+.env
+*.log
+drizzle/meta/
