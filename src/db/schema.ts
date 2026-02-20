@@ -7,7 +7,9 @@ import { sql } from 'drizzle-orm';
 
 export const users = sqliteTable('users', {
     id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-    telegramId: integer('telegram_id', { mode: 'number' }).unique().notNull(),
+    telegramId: integer('telegram_id', { mode: 'number' }).unique(),
+    googleId: text('google_id').unique(),
+    email: text('email'),
     firstName: text('first_name').notNull(),
     lastName: text('last_name'),
     username: text('username'),

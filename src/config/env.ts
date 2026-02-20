@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 export const envSchema = z.object({
     DATABASE_PATH: z.string().default('./data/chalysh_auth.db'),
-    TELEGRAM_BOT_TOKEN: z.string().min(1),
+    TELEGRAM_BOT_TOKEN: z.string().default(''),
+    GOOGLE_CLIENT_ID: z.string().default(''),
     JWT_SECRET: z.string().min(16),
     ACCESS_TOKEN_EXPIRES_IN: z.string().default('15m'),
     REFRESH_TOKEN_EXPIRES_IN: z.string().default('30d'),

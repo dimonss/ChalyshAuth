@@ -2,12 +2,13 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import {
     telegramAuthSchema,
+    googleAuthSchema,
     refreshTokenSchema,
     authResponseSchema,
     tokenPairResponseSchema,
     messageResponseSchema,
 } from './auth.schemas.js';
-import { loginOrRegister, refresh, logout } from './auth.service.js';
+import { loginOrRegister, loginOrRegisterGoogle, refresh, logout } from './auth.service.js';
 
 export async function authRoutes(app: FastifyInstance) {
     const typedApp = app.withTypeProvider<ZodTypeProvider>();
@@ -30,6 +31,32 @@ export async function authRoutes(app: FastifyInstance) {
         async (request, reply) => {
             try {
                 const result = await loginOrRegister(app, request.body);
+                return reply.send(result);
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : 'Authentication failed';
+                return reply.status(401).send({ message });
+            }
+        },
+    );
+
+    /**
+     * POST /api/auth/google
+     * Login or register via Google ID token.
+     */
+    typedApp.post(
+        '/api/auth/google',
+        {
+            schema: {
+                body: googleAuthSchema,
+                response: {
+                    200: authResponseSchema,
+                    401: messageResponseSchema,
+                },
+            },
+        },
+        async (request, reply) => {
+            try {
+                const result = await loginOrRegisterGoogle(app, request.body.idToken);
                 return reply.send(result);
             } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : 'Authentication failed';

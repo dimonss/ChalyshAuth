@@ -52,7 +52,9 @@ export async function userRoutes(app: FastifyInstance) {
 
             return reply.send({
                 id: user.id,
-                telegramId: user.telegramId.toString(),
+                telegramId: user.telegramId?.toString() ?? null,
+                googleId: user.googleId ?? null,
+                email: user.email ?? null,
                 firstName: user.firstName,
                 lastName: user.lastName,
                 username: user.username,

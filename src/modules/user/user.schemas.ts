@@ -8,7 +8,9 @@ export const additionalFieldsResponseSchema = z.object({
 
 export const userProfileResponseSchema = z.object({
     id: z.string().uuid(),
-    telegramId: z.string(),
+    telegramId: z.string().nullable(),
+    googleId: z.string().nullable(),
+    email: z.string().nullable(),
     firstName: z.string(),
     lastName: z.string().nullable(),
     username: z.string().nullable(),

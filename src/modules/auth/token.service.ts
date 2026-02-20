@@ -27,7 +27,8 @@ function parseDuration(duration: string): number {
 
 export interface AccessTokenPayload {
     sub: string; // user id
-    telegramId: string;
+    telegramId?: string;
+    googleId?: string;
 }
 
 /**

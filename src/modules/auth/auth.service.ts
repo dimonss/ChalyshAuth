@@ -6,6 +6,9 @@ import {
     type TelegramAuthData,
 } from './telegram.service.js';
 import {
+    verifyGoogleIdToken,
+} from './google.service.js';
+import {
     generateAccessToken,
     generateRefreshToken,
     verifyRefreshToken,
@@ -20,7 +23,9 @@ export interface AuthResult {
     refreshToken: string;
     user: {
         id: string;
-        telegramId: string;
+        telegramId: string | null;
+        googleId: string | null;
+        email: string | null;
         firstName: string;
         lastName: string | null;
         username: string | null;
@@ -89,7 +94,7 @@ export async function loginOrRegister(
     // 3. Generate tokens
     const payload: AccessTokenPayload = {
         sub: user.id,
-        telegramId: user.telegramId.toString(),
+        telegramId: user.telegramId?.toString(),
     };
 
     const accessToken = generateAccessToken(app, payload);
@@ -100,7 +105,86 @@ export async function loginOrRegister(
         refreshToken,
         user: {
             id: user.id,
-            telegramId: user.telegramId.toString(),
+            telegramId: user.telegramId?.toString() ?? null,
+            googleId: user.googleId ?? null,
+            email: user.email ?? null,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            username: user.username,
+            photoUrl: user.photoUrl,
+        },
+    };
+}
+
+/**
+ * Verify Google ID token → upsert user → generate token pair.
+ */
+export async function loginOrRegisterGoogle(
+    app: FastifyInstance,
+    idToken: string,
+): Promise<AuthResult> {
+    // 1. Verify Google ID token
+    const googleUser = await verifyGoogleIdToken(idToken);
+
+    const db = getDb();
+
+    // 2. Upsert user
+    const existingUser = db
+        .select()
+        .from(users)
+        .where(eq(users.googleId, googleUser.sub))
+        .limit(1)
+        .get();
+
+    let user;
+
+    if (existingUser) {
+        // Update profile data from Google
+        user = db
+            .update(users)
+            .set({
+                email: googleUser.email,
+                firstName: googleUser.given_name ?? googleUser.name,
+                lastName: googleUser.family_name ?? null,
+                photoUrl: googleUser.picture ?? null,
+                updatedAt: new Date().toISOString(),
+            })
+            .where(eq(users.id, existingUser.id))
+            .returning()
+            .get();
+    } else {
+        // Create new user
+        user = db
+            .insert(users)
+            .values({
+                googleId: googleUser.sub,
+                email: googleUser.email,
+                firstName: googleUser.given_name ?? googleUser.name,
+                lastName: googleUser.family_name ?? null,
+                username: googleUser.email.split('@')[0],
+                photoUrl: googleUser.picture ?? null,
+            })
+            .returning()
+            .get();
+    }
+
+    // 3. Generate tokens
+    const payload: AccessTokenPayload = {
+        sub: user.id,
+        googleId: user.googleId ?? undefined,
+    };
+
+    const accessToken = generateAccessToken(app, payload);
+    const refreshToken = generateRefreshToken(user.id);
+
+    return {
+        accessToken,
+        refreshToken,
+        user: {
+            id: user.id,
+            telegramId: user.telegramId?.toString() ?? null,
+            googleId: user.googleId ?? null,
+            email: user.email ?? null,
             firstName: user.firstName,
             lastName: user.lastName,
             username: user.username,
@@ -142,7 +226,8 @@ export async function refresh(
     // 4. Generate new pair
     const payload: AccessTokenPayload = {
         sub: user.id,
-        telegramId: user.telegramId.toString(),
+        telegramId: user.telegramId?.toString(),
+        googleId: user.googleId ?? undefined,
     };
 
     const accessToken = generateAccessToken(app, payload);
