@@ -21,6 +21,8 @@ export async function authRoutes(app: FastifyInstance) {
         '/api/auth/telegram',
         {
             schema: {
+                tags: ['Auth'],
+                description: 'Login or register via Telegram Login Widget data',
                 body: telegramAuthSchema,
                 response: {
                     200: authResponseSchema,
@@ -47,6 +49,8 @@ export async function authRoutes(app: FastifyInstance) {
         '/api/auth/google',
         {
             schema: {
+                tags: ['Auth'],
+                description: 'Login or register via Google ID token',
                 body: googleAuthSchema,
                 response: {
                     200: authResponseSchema,
@@ -73,6 +77,8 @@ export async function authRoutes(app: FastifyInstance) {
         '/api/auth/refresh',
         {
             schema: {
+                tags: ['Auth'],
+                description: 'Refresh the access/refresh token pair',
                 body: refreshTokenSchema,
                 response: {
                     200: tokenPairResponseSchema,
@@ -99,6 +105,8 @@ export async function authRoutes(app: FastifyInstance) {
         '/api/auth/logout',
         {
             schema: {
+                tags: ['Auth'],
+                description: 'Revoke a refresh token',
                 body: refreshTokenSchema,
                 response: { 200: messageResponseSchema },
             },

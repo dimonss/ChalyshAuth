@@ -36,6 +36,9 @@ export async function userRoutes(app: FastifyInstance) {
         '/api/user/me',
         {
             schema: {
+                tags: ['User'],
+                description: 'Get current user profile',
+                security: [{ bearerAuth: [] }],
                 response: {
                     200: userProfileResponseSchema,
                     404: errorResponseSchema,
@@ -74,6 +77,9 @@ export async function userRoutes(app: FastifyInstance) {
         '/api/user/me/fields',
         {
             schema: {
+                tags: ['User'],
+                description: 'Get additionalFields only',
+                security: [{ bearerAuth: [] }],
                 response: {
                     200: additionalFieldsResponseSchema,
                     404: errorResponseSchema,
@@ -101,6 +107,9 @@ export async function userRoutes(app: FastifyInstance) {
         '/api/user/me/fields',
         {
             schema: {
+                tags: ['User'],
+                description: 'Merge data into additionalFields',
+                security: [{ bearerAuth: [] }],
                 body: additionalFieldsUpdateSchema,
                 response: { 200: additionalFieldsResponseSchema },
             },
@@ -120,6 +129,9 @@ export async function userRoutes(app: FastifyInstance) {
         '/api/user/me/fields/:key',
         {
             schema: {
+                tags: ['User'],
+                description: 'Remove a top-level key from additionalFields',
+                security: [{ bearerAuth: [] }],
                 params: deleteFieldParamsSchema,
                 response: { 200: additionalFieldsResponseSchema },
             },

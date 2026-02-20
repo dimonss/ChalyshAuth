@@ -5,6 +5,7 @@ import {
 } from 'fastify-type-provider-zod';
 import jwtPlugin from './plugins/jwt.plugin.js';
 import corsPlugin from './plugins/cors.plugin.js';
+import swaggerPlugin from './plugins/swagger.plugin.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { userRoutes } from './modules/user/user.routes.js';
 
@@ -39,6 +40,7 @@ export async function buildApp() {
 
     // Plugins
     await app.register(corsPlugin);
+    await app.register(swaggerPlugin);
     await app.register(jwtPlugin);
 
     // Routes
@@ -46,7 +48,9 @@ export async function buildApp() {
     await app.register(userRoutes);
 
     // Health check
-    app.get('/api/health', async () => {
+    app.get('/api/health', {
+        schema: { tags: ['Health'] },
+    }, async () => {
         return { status: 'ok', timestamp: new Date().toISOString() };
     });
 
