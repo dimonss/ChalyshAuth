@@ -11,7 +11,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:studio": "drizzle-kit studio",
-    "start:prod": "pm2 start src/index.js --name chalysh_auth --interpreter ~/.nvm/versions/node/v24.13.0/bin/node"
+    "start:prod": "pm2 start dist/server.js --name chalysh_auth --interpreter ~/.nvm/versions/node/v24.13.0/bin/node"
   },
   "keywords": [
     "telegram",
