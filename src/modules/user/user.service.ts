@@ -3,11 +3,34 @@ import { getDb } from '../../db/connection.js';
 import { users, type User } from '../../db/schema.js';
 
 /**
+ * Helper to safely parse and heal additionalFields
+ */
+function parseAdditionalFields(fields: unknown): Record<string, unknown> {
+    let parsed: any = fields;
+    if (typeof fields === 'string') {
+        try {
+            parsed = JSON.parse(fields);
+        } catch {
+            return {};
+        }
+    }
+    
+    if (typeof parsed === 'object' && parsed !== null) {
+        return parsed as Record<string, unknown>;
+    }
+    
+    return {};
+}
+
+/**
  * Get user profile by ID.
  */
 export async function getProfile(userId: string): Promise<User | null> {
     const db = getDb();
     const user = db.select().from(users).where(eq(users.id, userId)).limit(1).get();
+    if (user) {
+        user.additionalFields = parseAdditionalFields(user.additionalFields);
+    }
     return user ?? null;
 }
 
@@ -26,7 +49,7 @@ export async function getAdditionalFields(
         .get();
 
     if (!user) return null;
-    return (user.additionalFields as Record<string, unknown>) ?? {};
+    return parseAdditionalFields(user.additionalFields);
 }
 
 /**
@@ -49,7 +72,7 @@ export async function updateAdditionalFields(
 
     if (!current) throw new Error('User not found');
 
-    const existing = (current.additionalFields as Record<string, unknown>) ?? {};
+    const existing = parseAdditionalFields(current.additionalFields);
     const merged = { ...existing, ...fields };
 
     // 2. Write merged result
@@ -64,7 +87,7 @@ export async function updateAdditionalFields(
         .get();
 
     if (!updated) throw new Error('User not found');
-    return (updated.additionalFields as Record<string, unknown>) ?? {};
+    return parseAdditionalFields(updated.additionalFields);
 }
 
 /**
@@ -86,7 +109,7 @@ export async function deleteAdditionalFieldKey(
 
     if (!current) throw new Error('User not found');
 
-    const existing = (current.additionalFields as Record<string, unknown>) ?? {};
+    const existing = parseAdditionalFields(current.additionalFields);
     const { [key]: _, ...rest } = existing;
 
     // 2. Write without the deleted key
@@ -101,5 +124,5 @@ export async function deleteAdditionalFieldKey(
         .get();
 
     if (!updated) throw new Error('User not found');
-    return (updated.additionalFields as Record<string, unknown>) ?? {};
+    return parseAdditionalFields(updated.additionalFields);
 }

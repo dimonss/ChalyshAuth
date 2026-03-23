@@ -8,9 +8,11 @@ import corsPlugin from './plugins/cors.plugin.js';
 import swaggerPlugin from './plugins/swagger.plugin.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { userRoutes } from './modules/user/user.routes.js';
+import { getEnv } from './config/env.js';
 
 export async function buildApp() {
     const app = Fastify({
+        ignoreTrailingSlash: true,
         logger: {
             level: 'info',
             transport: {
@@ -43,16 +45,20 @@ export async function buildApp() {
     await app.register(swaggerPlugin);
     await app.register(jwtPlugin);
 
-    // Routes
-    await app.register(authRoutes);
-    await app.register(userRoutes);
+    // Routes — all under configurable BASE_URL prefix (default: /api)
+    const baseUrl = getEnv().BASE_URL;
 
-    // Health check
-    app.get('/api/health', {
-        schema: { tags: ['Health'] },
-    }, async () => {
-        return { status: 'ok', timestamp: new Date().toISOString() };
-    });
+    await app.register(async (prefixed) => {
+        await prefixed.register(authRoutes);
+        await prefixed.register(userRoutes);
+
+        // Health check
+        prefixed.get('/health', {
+            schema: { tags: ['Health'] },
+        }, async () => {
+            return { status: 'ok', timestamp: new Date().toISOString() };
+        });
+    }, { prefix: baseUrl });
 
     return app;
 }

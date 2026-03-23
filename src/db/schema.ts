@@ -14,7 +14,7 @@ export const users = sqliteTable('users', {
     lastName: text('last_name'),
     username: text('username'),
     photoUrl: text('photo_url'),
-    additionalFields: text('additional_fields', { mode: 'json' }).default('{}').$type<Record<string, unknown>>(),
+    additionalFields: text('additional_fields', { mode: 'json' }).default(sql`'{}'`).$type<Record<string, unknown>>(),
     createdAt: text('created_at').default(sql`(datetime('now'))`).notNull(),
     updatedAt: text('updated_at').default(sql`(datetime('now'))`).notNull(),
 });

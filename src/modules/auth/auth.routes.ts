@@ -14,11 +14,11 @@ export async function authRoutes(app: FastifyInstance) {
     const typedApp = app.withTypeProvider<ZodTypeProvider>();
 
     /**
-     * POST /api/auth/telegram
+     * POST /auth/telegram
      * Login or register via Telegram Login Widget data.
      */
     typedApp.post(
-        '/api/auth/telegram',
+        '/auth/telegram',
         {
             schema: {
                 tags: ['Auth'],
@@ -42,11 +42,11 @@ export async function authRoutes(app: FastifyInstance) {
     );
 
     /**
-     * POST /api/auth/google
+     * POST /auth/google
      * Login or register via Google ID token.
      */
     typedApp.post(
-        '/api/auth/google',
+        '/auth/google',
         {
             schema: {
                 tags: ['Auth'],
@@ -70,11 +70,11 @@ export async function authRoutes(app: FastifyInstance) {
     );
 
     /**
-     * POST /api/auth/refresh
+     * POST /auth/refresh
      * Refresh the access/refresh token pair.
      */
     typedApp.post(
-        '/api/auth/refresh',
+        '/auth/refresh',
         {
             schema: {
                 tags: ['Auth'],
@@ -98,11 +98,11 @@ export async function authRoutes(app: FastifyInstance) {
     );
 
     /**
-     * POST /api/auth/logout
+     * POST /auth/logout
      * Revoke a refresh token.
      */
     typedApp.post(
-        '/api/auth/logout',
+        '/auth/logout',
         {
             schema: {
                 tags: ['Auth'],

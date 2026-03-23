@@ -8,6 +8,7 @@ export const envSchema = z.object({
     ACCESS_TOKEN_EXPIRES_IN: z.string().default('15m'),
     REFRESH_TOKEN_EXPIRES_IN: z.string().default('30d'),
     PORT: z.coerce.number().default(3000),
+    BASE_URL: z.string().default('/api'),
 });
 
 export type Env = z.infer<typeof envSchema>;

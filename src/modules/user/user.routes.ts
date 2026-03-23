@@ -29,11 +29,11 @@ export async function userRoutes(app: FastifyInstance) {
     });
 
     /**
-     * GET /api/user/me
+     * GET /user/me
      * Get current user profile.
      */
     typedApp.get(
-        '/api/user/me',
+        '/user/me',
         {
             schema: {
                 tags: ['User'],
@@ -70,11 +70,11 @@ export async function userRoutes(app: FastifyInstance) {
     );
 
     /**
-     * GET /api/user/me/fields
+     * GET /user/me/fields
      * Get additionalFields only.
      */
     typedApp.get(
-        '/api/user/me/fields',
+        '/user/me/fields',
         {
             schema: {
                 tags: ['User'],
@@ -99,12 +99,12 @@ export async function userRoutes(app: FastifyInstance) {
     );
 
     /**
-     * PATCH /api/user/me/fields
+     * PATCH /user/me/fields
      * Merge data into additionalFields.
      * Body: { "shootingStarsGame": { "score": 200, "level": 5 } }
      */
     typedApp.patch(
-        '/api/user/me/fields',
+        '/user/me/fields',
         {
             schema: {
                 tags: ['User'],
@@ -122,11 +122,11 @@ export async function userRoutes(app: FastifyInstance) {
     );
 
     /**
-     * DELETE /api/user/me/fields/:key
+     * DELETE /user/me/fields/:key
      * Remove a top-level key from additionalFields.
      */
     typedApp.delete(
-        '/api/user/me/fields/:key',
+        '/user/me/fields/:key',
         {
             schema: {
                 tags: ['User'],
