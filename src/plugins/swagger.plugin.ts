@@ -3,6 +3,7 @@ import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 import { jsonSchemaTransform } from 'fastify-type-provider-zod';
 import type { FastifyInstance } from 'fastify';
+import { getEnv } from '../config/env.js';
 
 export default fp(async function swaggerPlugin(app: FastifyInstance) {
     await app.register(fastifySwagger, {
@@ -36,6 +37,6 @@ export default fp(async function swaggerPlugin(app: FastifyInstance) {
     });
 
     await app.register(fastifySwaggerUi, {
-        routePrefix: '/docs',
+        routePrefix: `${getEnv().BASE_URL}/docs`,
     });
 });
