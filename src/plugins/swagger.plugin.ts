@@ -18,6 +18,10 @@ export default fp(async function swaggerPlugin(app: FastifyInstance) {
                 { name: 'User', description: 'User profile & additional fields' },
                 { name: 'Health', description: 'Health check' },
             ],
+            servers: [
+                { url: '/auth', description: 'Production API' },
+                { url: '/', description: 'Local API' },
+            ],
             components: {
                 securitySchemes: {
                     bearerAuth: {
