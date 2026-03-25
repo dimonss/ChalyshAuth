@@ -3,12 +3,17 @@ import {
     serializerCompiler,
     validatorCompiler,
 } from 'fastify-type-provider-zod';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import jwtPlugin from './plugins/jwt.plugin.js';
 import corsPlugin from './plugins/cors.plugin.js';
 import swaggerPlugin from './plugins/swagger.plugin.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { userRoutes } from './modules/user/user.routes.js';
 import { getEnv } from './config/env.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export async function buildApp() {
     const app = Fastify({
@@ -44,6 +49,19 @@ export async function buildApp() {
     await app.register(corsPlugin);
     await app.register(swaggerPlugin);
     await app.register(jwtPlugin);
+
+    // Public pages (outside API prefix)
+    const publicDir = join(__dirname, 'public');
+
+    app.get('/privacy-policy', { schema: { hide: true } }, async (_request, reply) => {
+        const html = readFileSync(join(publicDir, 'privacy-policy.html'), 'utf-8');
+        return reply.type('text/html').send(html);
+    });
+
+    // app.get('/terms-of-service', { schema: { hide: true } }, async (_request, reply) => {
+    //     const html = readFileSync(join(publicDir, 'terms-of-service.html'), 'utf-8');
+    //     return reply.type('text/html').send(html);
+    // });
 
     // Routes — all under configurable BASE_URL prefix (default: /api)
     const baseUrl = getEnv().BASE_URL;

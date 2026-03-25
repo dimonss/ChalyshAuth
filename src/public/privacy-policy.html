@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy — ChalyshAuth</title>
+    <style>
+        :root {
+            --bg: #0f1117;
+            --card: #1a1d27;
+            --accent: #6c5ce7;
+            --accent2: #a29bfe;
+            --text: #e0e0e0;
+            --muted: #8b8fa3;
+            --border: #2d3043;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            min-height: 100vh;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #1a1d27 0%, #2d1b69 50%, #1a1d27 100%);
+            padding: 60px 20px 40px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .hero h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent2), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .hero .subtitle {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .lang-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .lang-toggle button {
+            padding: 6px 18px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.25s ease;
+        }
+
+        .lang-toggle button.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        .lang-toggle button:hover:not(.active) {
+            border-color: var(--accent2);
+            color: var(--accent2);
+        }
+
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 40px 24px 60px;
+        }
+
+        .section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px 32px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s ease;
+        }
+
+        .section:hover {
+            border-color: var(--accent);
+        }
+
+        .section h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--accent2);
+            margin-bottom: 12px;
+        }
+
+        .section p, .section li {
+            color: var(--muted);
+            font-size: 0.92rem;
+            margin-bottom: 8px;
+        }
+
+        .section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .section ul li::before {
+            content: '→';
+            color: var(--accent);
+            margin-right: 10px;
+            font-weight: 600;
+        }
+
+        .effective-date {
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.82rem;
+            margin-top: 20px;
+            padding-bottom: 40px;
+        }
+
+        @media (max-width: 600px) {
+            .hero { padding: 40px 16px 28px; }
+            .hero h1 { font-size: 1.6rem; }
+            .container { padding: 24px 16px 40px; }
+            .section { padding: 20px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="hero">
+    <h1 id="title"></h1>
+    <p class="subtitle" id="subtitle"></p>
+    <div class="lang-toggle">
+        <button id="btn-en" onclick="setLang('en')">English</button>
+        <button id="btn-ru" onclick="setLang('ru')">Русский</button>
+    </div>
+</div>
+
+<div class="container" id="content"></div>
+
+<script>
+const i18n = {
+    en: {
+        title: 'Privacy Policy',
+        subtitle: 'ChalyshAuth — Authentication Service',
+        effectiveDate: 'Effective date: March 25, 2026',
+        sections: [
+            {
+                heading: '1. Introduction',
+                text: 'This Privacy Policy explains how ChalyshAuth ("we", "our", "us") collects, uses, and protects your personal information when you use our authentication service.'
+            },
+            {
+                heading: '2. Information We Collect',
+                list: [
+                    'Account data from third-party providers (Telegram, Google): name, user ID, profile photo URL, email address',
+                    'Authentication tokens (access and refresh tokens)',
+                    'Technical data: IP address, browser type, device information, timestamps of authentication events'
+                ]
+            },
+            {
+                heading: '3. How We Use Your Information',
+                list: [
+                    'To authenticate you and provide access to connected services',
+                    'To create and manage your account',
+                    'To issue, refresh, and revoke authentication tokens',
+                    'To maintain security and prevent fraud'
+                ]
+            },
+            {
+                heading: '4. Data Storage and Security',
+                text: 'Your data is stored in a secure database. We use JWT-based authentication with short-lived access tokens and encrypted refresh tokens. We take reasonable measures to protect your personal information from unauthorized access, alteration, or destruction.'
+            },
+            {
+                heading: '5. Third-Party Services',
+                text: 'We use Telegram Login Widget and Google Sign-In for authentication. When you log in through these services, their respective privacy policies apply to the data they process. We only receive the data necessary for authentication.'
+            },
+            {
+                heading: '6. Data Sharing',
+                text: 'We do not sell, rent, or share your personal information with third parties except as necessary to provide the authentication service or as required by law.'
+            },
+            {
+                heading: '7. Data Retention',
+                text: 'We retain your account information for as long as your account is active. Refresh tokens are revoked upon logout. You may request deletion of your account and associated data at any time.'
+            },
+            {
+                heading: '8. Your Rights',
+                list: [
+                    'Access the personal data we hold about you',
+                    'Request correction of inaccurate data',
+                    'Request deletion of your data',
+                    'Revoke consent for data processing by deleting your account'
+                ]
+            },
+            {
+                heading: '9. Changes to This Policy',
+                text: 'We may update this Privacy Policy from time to time. Changes will be reflected on this page with an updated effective date. Continued use of the service after changes constitutes acceptance of the updated policy.'
+            },
+            {
+                heading: '10. Contact',
+                text: 'If you have questions about this Privacy Policy, please contact us through the service administrator.'
+            }
+        ]
+    },
+    ru: {
+        title: 'Политика конфиденциальности',
+        subtitle: 'ChalyshAuth — Сервис аутентификации',
+        effectiveDate: 'Дата вступления в силу: 25 марта 2026',
+        sections: [
+            {
+                heading: '1. Введение',
+                text: 'Настоящая Политика конфиденциальности описывает, как ChalyshAuth («мы», «наш», «нас») собирает, использует и защищает вашу персональную информацию при использовании нашего сервиса аутентификации.'
+            },
+            {
+                heading: '2. Какие данные мы собираем',
+                list: [
+                    'Данные аккаунта из сторонних провайдеров (Telegram, Google): имя, идентификатор пользователя, URL фото профиля, адрес электронной почты',
+                    'Токены аутентификации (access- и refresh-токены)',
+                    'Технические данные: IP-адрес, тип браузера, информация об устройстве, временные метки событий аутентификации'
+                ]
+            },
+            {
+                heading: '3. Как мы используем ваши данные',
+                list: [
+                    'Для аутентификации и предоставления доступа к подключённым сервисам',
+                    'Для создания и управления вашим аккаунтом',
+                    'Для выпуска, обновления и отзыва токенов аутентификации',
+                    'Для обеспечения безопасности и предотвращения мошенничества'
+                ]
+            },
+            {
+                heading: '4. Хранение и защита данных',
+                text: 'Ваши данные хранятся в защищённой базе данных. Мы используем JWT-аутентификацию с краткосрочными access-токенами и зашифрованными refresh-токенами. Мы принимаем разумные меры для защиты вашей персональной информации от несанкционированного доступа, изменения или уничтожения.'
+            },
+            {
+                heading: '5. Сторонние сервисы',
+                text: 'Мы используем Telegram Login Widget и Google Sign-In для аутентификации. При входе через эти сервисы их соответствующие политики конфиденциальности применяются к обрабатываемым ими данным. Мы получаем только данные, необходимые для аутентификации.'
+            },
+            {
+                heading: '6. Передача данных',
+                text: 'Мы не продаём, не сдаём в аренду и не передаём вашу персональную информацию третьим лицам, за исключением случаев, необходимых для предоставления сервиса аутентификации или предусмотренных законодательством.'
+            },
+            {
+                heading: '7. Сроки хранения данных',
+                text: 'Мы храним информацию вашего аккаунта, пока он активен. Refresh-токены аннулируются при выходе из системы. Вы можете запросить удаление аккаунта и связанных данных в любое время.'
+            },
+            {
+                heading: '8. Ваши права',
+                list: [
+                    'Получить доступ к персональным данным, которые мы храним',
+                    'Запросить исправление неточных данных',
+                    'Запросить удаление ваших данных',
+                    'Отозвать согласие на обработку данных, удалив свой аккаунт'
+                ]
+            },
+            {
+                heading: '9. Изменения в политике',
+                text: 'Мы можем время от времени обновлять данную Политику конфиденциальности. Изменения будут отражены на этой странице с обновлённой датой вступления в силу. Продолжение использования сервиса после внесения изменений означает согласие с обновлённой политикой.'
+            },
+            {
+                heading: '10. Контакты',
+                text: 'Если у вас есть вопросы по данной Политике конфиденциальности, пожалуйста, свяжитесь с нами через администратора сервиса.'
+            }
+        ]
+    }
+};
+
+let currentLang = 'en';
+
+function detectLang() {
+    const lang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+    return lang.startsWith('ru') ? 'ru' : 'en';
+}
+
+function setLang(lang) {
+    currentLang = lang;
+    render();
+}
+
+function render() {
+    const t = i18n[currentLang];
+    document.getElementById('title').textContent = t.title;
+    document.getElementById('subtitle').textContent = t.subtitle;
+    document.documentElement.lang = currentLang;
+
+    document.getElementById('btn-en').classList.toggle('active', currentLang === 'en');
+    document.getElementById('btn-ru').classList.toggle('active', currentLang === 'ru');
+
+    let html = '';
+    for (const s of t.sections) {
+        html += '<div class="section"><h2>' + s.heading + '</h2>';
+        if (s.text) {
+            html += '<p>' + s.text + '</p>';
+        }
+        if (s.list) {
+            html += '<ul>';
+            for (const item of s.list) {
+                html += '<li>' + item + '</li>';
+            }
+            html += '</ul>';
+        }
+        html += '</div>';
+    }
+    html += '<p class="effective-date">' + t.effectiveDate + '</p>';
+    document.getElementById('content').innerHTML = html;
+}
+
+// Init
+currentLang = detectLang();
+render();
+</script>
+
+</body>
+</html>
