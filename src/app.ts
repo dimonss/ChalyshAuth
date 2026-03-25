@@ -50,23 +50,24 @@ export async function buildApp() {
     await app.register(swaggerPlugin);
     await app.register(jwtPlugin);
 
-    // Public pages (outside API prefix)
-    const publicDir = join(__dirname, 'public');
-
-    app.get('/privacy-policy', { schema: { hide: true } }, async (_request, reply) => {
-        const html = readFileSync(join(publicDir, 'privacy-policy.html'), 'utf-8');
-        return reply.type('text/html').send(html);
-    });
-
-    app.get('/terms-of-service', { schema: { hide: true } }, async (_request, reply) => {
-        const html = readFileSync(join(publicDir, 'terms-of-service.html'), 'utf-8');
-        return reply.type('text/html').send(html);
-    });
-
     // Routes — all under configurable BASE_URL prefix (default: /api)
     const baseUrl = getEnv().BASE_URL;
 
+    // Pre-load static public pages into memory at startup
+    const publicDir = join(__dirname, 'public');
+    const privacyPolicyHtml = readFileSync(join(publicDir, 'privacy-policy.html'), 'utf-8');
+    const termsOfServiceHtml = readFileSync(join(publicDir, 'terms-of-service.html'), 'utf-8');
+
     await app.register(async (prefixed) => {
+        // Public pages
+        prefixed.get('/privacy-policy', { schema: { hide: true } }, async (_request, reply) => {
+            return reply.type('text/html').send(privacyPolicyHtml);
+        });
+
+        prefixed.get('/terms-of-service', { schema: { hide: true } }, async (_request, reply) => {
+            return reply.type('text/html').send(termsOfServiceHtml);
+        });
+
         await prefixed.register(authRoutes);
         await prefixed.register(userRoutes);
 
