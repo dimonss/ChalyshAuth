@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service — ChalyshAuth</title>
+    <style>
+        :root {
+            --bg: #0f1117;
+            --card: #1a1d27;
+            --accent: #00b894;
+            --accent2: #55efc4;
+            --text: #e0e0e0;
+            --muted: #8b8fa3;
+            --border: #2d3043;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            min-height: 100vh;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #1a1d27 0%, #0d3b2e 50%, #1a1d27 100%);
+            padding: 60px 20px 40px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .hero h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent2), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .hero .subtitle {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .lang-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .lang-toggle button {
+            padding: 6px 18px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.25s ease;
+        }
+
+        .lang-toggle button.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        .lang-toggle button:hover:not(.active) {
+            border-color: var(--accent2);
+            color: var(--accent2);
+        }
+
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 40px 24px 60px;
+        }
+
+        .section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px 32px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s ease;
+        }
+
+        .section:hover {
+            border-color: var(--accent);
+        }
+
+        .section h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--accent2);
+            margin-bottom: 12px;
+        }
+
+        .section p, .section li {
+            color: var(--muted);
+            font-size: 0.92rem;
+            margin-bottom: 8px;
+        }
+
+        .section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .section ul li::before {
+            content: '→';
+            color: var(--accent);
+            margin-right: 10px;
+            font-weight: 600;
+        }
+
+        .effective-date {
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.82rem;
+            margin-top: 20px;
+            padding-bottom: 40px;
+        }
+
+        @media (max-width: 600px) {
+            .hero { padding: 40px 16px 28px; }
+            .hero h1 { font-size: 1.6rem; }
+            .container { padding: 24px 16px 40px; }
+            .section { padding: 20px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="hero">
+    <h1 id="title"></h1>
+    <p class="subtitle" id="subtitle"></p>
+    <div class="lang-toggle">
+        <button id="btn-en" onclick="setLang('en')">English</button>
+        <button id="btn-ru" onclick="setLang('ru')">Русский</button>
+    </div>
+</div>
+
+<div class="container" id="content"></div>
+
+<script>
+const i18n = {
+    en: {
+        title: 'Terms of Service',
+        subtitle: 'ChalyshAuth — Authentication Service',
+        effectiveDate: 'Effective date: March 25, 2026',
+        sections: [
+            {
+                heading: '1. Acceptance of Terms',
+                text: 'By accessing or using ChalyshAuth ("the Service"), you agree to be bound by these Terms of Service. If you do not agree with any part of these terms, you must not use the Service.'
+            },
+            {
+                heading: '2. Description of Service',
+                text: 'ChalyshAuth is an authentication service that allows users to log in to connected applications using third-party providers such as Telegram and Google. The Service issues and manages authentication tokens for secure access.'
+            },
+            {
+                heading: '3. User Accounts',
+                list: [
+                    'Your account is created automatically upon first authentication via a supported provider',
+                    'You are responsible for maintaining the security of your authentication credentials',
+                    'You must not share your access or refresh tokens with third parties',
+                    'You must provide accurate information through your authentication provider'
+                ]
+            },
+            {
+                heading: '4. Acceptable Use',
+                list: [
+                    'You must not attempt to bypass or circumvent the authentication mechanisms',
+                    'You must not use the Service for any illegal or unauthorized purpose',
+                    'You must not attempt to access another user\'s account or data',
+                    'You must not overload the Service with automated or excessive requests'
+                ]
+            },
+            {
+                heading: '5. Authentication Tokens',
+                text: 'Access tokens are short-lived and grant temporary access to connected services. Refresh tokens are used to obtain new access tokens. You are responsible for securely storing your tokens. We reserve the right to revoke any tokens at any time for security reasons.'
+            },
+            {
+                heading: '6. Third-Party Services',
+                text: 'The Service relies on third-party authentication providers (Telegram, Google). Your use of these providers is subject to their respective terms of service. We are not responsible for the availability, accuracy, or reliability of third-party services.'
+            },
+            {
+                heading: '7. Service Availability',
+                text: 'We strive to provide continuous access to the Service but do not guarantee uninterrupted availability. The Service may be temporarily unavailable due to maintenance, updates, or circumstances beyond our control. We are not liable for any losses resulting from service interruptions.'
+            },
+            {
+                heading: '8. Limitation of Liability',
+                text: 'The Service is provided "as is" without warranties of any kind, express or implied. We shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the Service.'
+            },
+            {
+                heading: '9. Account Termination',
+                text: 'We reserve the right to suspend or terminate your account at any time if you violate these Terms of Service or if we determine that your use poses a security risk. You may also request deletion of your account at any time.'
+            },
+            {
+                heading: '10. Changes to Terms',
+                text: 'We may update these Terms of Service at any time. Changes will be posted on this page with an updated effective date. Continued use of the Service after changes constitutes acceptance of the updated terms.'
+            },
+            {
+                heading: '11. Governing Law',
+                text: 'These terms shall be governed by and construed in accordance with applicable laws. Any disputes arising from these terms or the use of the Service shall be resolved in accordance with the applicable jurisdiction.'
+            },
+            {
+                heading: '12. Contact',
+                text: 'If you have questions about these Terms of Service, please contact us through the service administrator.'
+            }
+        ]
+    },
+    ru: {
+        title: 'Условия использования',
+        subtitle: 'ChalyshAuth — Сервис аутентификации',
+        effectiveDate: 'Дата вступления в силу: 25 марта 2026',
+        sections: [
+            {
+                heading: '1. Принятие условий',
+                text: 'Используя ChalyshAuth («Сервис»), вы соглашаетесь с настоящими Условиями использования. Если вы не согласны с какой-либо частью условий, вы не должны использовать Сервис.'
+            },
+            {
+                heading: '2. Описание сервиса',
+                text: 'ChalyshAuth — это сервис аутентификации, который позволяет пользователям входить в подключённые приложения с помощью сторонних провайдеров, таких как Telegram и Google. Сервис выпускает и управляет токенами аутентификации для безопасного доступа.'
+            },
+            {
+                heading: '3. Учётные записи',
+                list: [
+                    'Ваша учётная запись создаётся автоматически при первой аутентификации через поддерживаемого провайдера',
+                    'Вы несёте ответственность за безопасность своих учётных данных',
+                    'Вы не должны передавать свои access- или refresh-токены третьим лицам',
+                    'Вы должны предоставлять точную информацию через вашего провайдера аутентификации'
+                ]
+            },
+            {
+                heading: '4. Допустимое использование',
+                list: [
+                    'Запрещается обходить или нарушать механизмы аутентификации',
+                    'Запрещается использовать Сервис в незаконных или несанкционированных целях',
+                    'Запрещается получать доступ к аккаунту или данным другого пользователя',
+                    'Запрещается перегружать Сервис автоматическими или чрезмерными запросами'
+                ]
+            },
+            {
+                heading: '5. Токены аутентификации',
+                text: 'Access-токены являются краткосрочными и предоставляют временный доступ к подключённым сервисам. Refresh-токены используются для получения новых access-токенов. Вы несёте ответственность за безопасное хранение токенов. Мы оставляем за собой право аннулировать любые токены в любое время по соображениям безопасности.'
+            },
+            {
+                heading: '6. Сторонние сервисы',
+                text: 'Сервис использует сторонних провайдеров аутентификации (Telegram, Google). Использование этих провайдеров регулируется их условиями использования. Мы не несём ответственности за доступность, точность или надёжность сторонних сервисов.'
+            },
+            {
+                heading: '7. Доступность сервиса',
+                text: 'Мы стремимся обеспечить непрерывный доступ к Сервису, но не гарантируем бесперебойную работу. Сервис может быть временно недоступен из-за обслуживания, обновлений или обстоятельств, не зависящих от нас. Мы не несём ответственности за убытки, вызванные перерывами в работе сервиса.'
+            },
+            {
+                heading: '8. Ограничение ответственности',
+                text: 'Сервис предоставляется «как есть», без каких-либо гарантий, явных или подразумеваемых. Мы не несём ответственности за косвенные, случайные, специальные или последующие убытки, возникающие в результате использования Сервиса.'
+            },
+            {
+                heading: '9. Прекращение действия аккаунта',
+                text: 'Мы оставляем за собой право приостановить или удалить вашу учётную запись в любое время, если вы нарушите Условия использования или если мы определим, что ваше использование представляет угрозу безопасности. Вы также можете запросить удаление своего аккаунта в любое время.'
+            },
+            {
+                heading: '10. Изменения условий',
+                text: 'Мы можем обновлять настоящие Условия использования в любое время. Изменения будут размещены на этой странице с обновлённой датой вступления в силу. Продолжение использования Сервиса после изменений означает принятие обновлённых условий.'
+            },
+            {
+                heading: '11. Применимое право',
+                text: 'Настоящие условия регулируются и толкуются в соответствии с применимым законодательством. Любые споры, возникающие из этих условий или использования Сервиса, разрешаются в соответствии с применимой юрисдикцией.'
+            },
+            {
+                heading: '12. Контакты',
+                text: 'Если у вас есть вопросы по данным Условиям использования, пожалуйста, свяжитесь с нами через администратора сервиса.'
+            }
+        ]
+    }
+};
+
+let currentLang = 'en';
+
+function detectLang() {
+    const lang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+    return lang.startsWith('ru') ? 'ru' : 'en';
+}
+
+function setLang(lang) {
+    currentLang = lang;
+    render();
+}
+
+function render() {
+    const t = i18n[currentLang];
+    document.getElementById('title').textContent = t.title;
+    document.getElementById('subtitle').textContent = t.subtitle;
+    document.documentElement.lang = currentLang;
+
+    document.getElementById('btn-en').classList.toggle('active', currentLang === 'en');
+    document.getElementById('btn-ru').classList.toggle('active', currentLang === 'ru');
+
+    let html = '';
+    for (const s of t.sections) {
+        html += '<div class="section"><h2>' + s.heading + '</h2>';
+        if (s.text) {
+            html += '<p>' + s.text + '</p>';
+        }
+        if (s.list) {
+            html += '<ul>';
+            for (const item of s.list) {
+                html += '<li>' + item + '</li>';
+            }
+            html += '</ul>';
+        }
+        html += '</div>';
+    }
+    html += '<p class="effective-date">' + t.effectiveDate + '</p>';
+    document.getElementById('content').innerHTML = html;
+}
+
+// Init
+currentLang = detectLang();
+render();
+</script>
+
+</body>
+</html>
