@@ -58,10 +58,10 @@ export async function buildApp() {
         return reply.type('text/html').send(html);
     });
 
-    // app.get('/terms-of-service', { schema: { hide: true } }, async (_request, reply) => {
-    //     const html = readFileSync(join(publicDir, 'terms-of-service.html'), 'utf-8');
-    //     return reply.type('text/html').send(html);
-    // });
+    app.get('/terms-of-service', { schema: { hide: true } }, async (_request, reply) => {
+        const html = readFileSync(join(publicDir, 'terms-of-service.html'), 'utf-8');
+        return reply.type('text/html').send(html);
+    });
 
     // Routes — all under configurable BASE_URL prefix (default: /api)
     const baseUrl = getEnv().BASE_URL;
