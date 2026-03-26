@@ -23,3 +23,13 @@ export const userProfileResponseSchema = z.object({
 export const deleteFieldParamsSchema = z.object({
     key: z.string().min(1),
 });
+
+export const leaderboardResponseSchema = z.object({
+    leaderboard: z.array(
+        z.object({
+            username: z.string().nullable(),
+            firstName: z.string(),
+            bestScore: z.number(),
+        })
+    ),
+});

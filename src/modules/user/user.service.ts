@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql, desc, isNotNull } from 'drizzle-orm';
 import { getDb } from '../../db/connection.js';
 import { users, type User } from '../../db/schema.js';
 
@@ -125,4 +125,28 @@ export async function deleteAdditionalFieldKey(
 
     if (!updated) throw new Error('User not found');
     return parseAdditionalFields(updated.additionalFields);
+}
+
+/**
+ * Get top users by spaceShooterGame.bestScore
+ */
+export async function getLeaderboard(limit = 10) {
+    const db = getDb();
+
+    // SQLite json_extract returns text or null. We cast to integer for proper sorting.
+    const scoreSql = sql<number>`CAST(json_extract(${users.additionalFields}, '$.spaceShooterGame.bestScore') AS INTEGER)`;
+
+    const leaderboard = db
+        .select({
+            username: users.username,
+            firstName: users.firstName,
+            bestScore: scoreSql,
+        })
+        .from(users)
+        .where(isNotNull(scoreSql))
+        .orderBy(desc(scoreSql))
+        .limit(limit)
+        .all();
+
+    return leaderboard;
 }

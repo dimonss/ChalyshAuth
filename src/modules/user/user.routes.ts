@@ -6,12 +6,14 @@ import {
     additionalFieldsResponseSchema,
     userProfileResponseSchema,
     deleteFieldParamsSchema,
+    leaderboardResponseSchema,
 } from './user.schemas.js';
 import {
     getProfile,
     getAdditionalFields,
     updateAdditionalFields,
     deleteAdditionalFieldKey,
+    getLeaderboard,
 } from './user.service.js';
 
 const errorResponseSchema = z.object({ message: z.string() });
@@ -141,6 +143,26 @@ export async function userRoutes(app: FastifyInstance) {
             const { key } = request.params;
             const updated = await deleteAdditionalFieldKey(sub, key);
             return reply.send({ additionalFields: updated });
+        },
+    );
+
+    /**
+     * GET /user/leaderboard
+     * Get top users by score
+     */
+    typedApp.get(
+        '/user/leaderboard',
+        {
+            schema: {
+                tags: ['User'],
+                description: 'Get Top 10 users by score',
+                security: [{ bearerAuth: [] }],
+                response: { 200: leaderboardResponseSchema },
+            },
+        },
+        async (request, reply) => {
+            const leaderboard = await getLeaderboard(10);
+            return reply.send({ leaderboard });
         },
     );
 }
