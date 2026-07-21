@@ -7,11 +7,44 @@ import {
     authResponseSchema,
     tokenPairResponseSchema,
     messageResponseSchema,
+    verifyTokenResponseSchema,
 } from './auth.schemas.js';
 import { loginOrRegister, loginOrRegisterGoogle, refresh, logout } from './auth.service.js';
+import type { AccessTokenPayload } from './token.service.js';
 
 export async function authRoutes(app: FastifyInstance) {
     const typedApp = app.withTypeProvider<ZodTypeProvider>();
+
+    /**
+     * GET /auth/verify
+     * Verify access token validity without database lookup.
+     */
+    typedApp.get(
+        '/auth/verify',
+        {
+            schema: {
+                tags: ['Auth'],
+                description: 'Verify access token validity',
+                security: [{ bearerAuth: [] }],
+                response: {
+                    200: verifyTokenResponseSchema,
+                    401: messageResponseSchema,
+                },
+            },
+            onRequest: async (request, reply) => {
+                try {
+                    await request.jwtVerify();
+                } catch {
+                    return reply.status(401).send({ message: 'Unauthorized' });
+                }
+            },
+        },
+        async (request, reply) => {
+            const user = request.user as AccessTokenPayload;
+            return reply.send({ valid: true, userId: user.sub });
+        },
+    );
+
 
     /**
      * POST /auth/telegram

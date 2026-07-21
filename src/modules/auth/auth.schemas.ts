@@ -41,3 +41,9 @@ export const tokenPairResponseSchema = z.object({
 export const messageResponseSchema = z.object({
     message: z.string(),
 });
+
+export const verifyTokenResponseSchema = z.object({
+    valid: z.boolean(),
+    userId: z.string().uuid(),
+});
+
