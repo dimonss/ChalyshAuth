@@ -66,7 +66,7 @@ export async function authRoutes(app: FastifyInstance) {
         async (request, reply) => {
             try {
                 const result = await loginOrRegister(app, request.body);
-                return reply.send(result);
+                return result;
             } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : 'Authentication failed';
                 return reply.status(401).send({ message });
@@ -94,7 +94,7 @@ export async function authRoutes(app: FastifyInstance) {
         async (request, reply) => {
             try {
                 const result = await loginOrRegisterGoogle(app, request.body.idToken);
-                return reply.send(result);
+                return result;
             } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : 'Authentication failed';
                 return reply.status(401).send({ message });
@@ -122,7 +122,10 @@ export async function authRoutes(app: FastifyInstance) {
         async (request, reply) => {
             try {
                 const result = await refresh(app, request.body.refreshToken);
-                return reply.send(result);
+                return {
+                    accessToken: result.accessToken,
+                    refreshToken: result.refreshToken,
+                };
             } catch (err: unknown) {
                 const message = err instanceof Error ? err.message : 'Token refresh failed';
                 return reply.status(401).send({ message });
