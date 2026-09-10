@@ -9,6 +9,7 @@ export const envSchema = z.object({
     REFRESH_TOKEN_EXPIRES_IN: z.string().default('30d'),
     PORT: z.coerce.number().default(3000),
     BASE_URL: z.string().default('/api'),
+    ADMIN_EMAILS: z.string().default('null@gmail.com'),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -25,4 +26,19 @@ export function getEnv(): Env {
         throw new Error('Environment not loaded. Call loadEnv() first.');
     }
     return envConfig;
+}
+
+export function isAdminEmail(email: string | null | undefined): boolean {
+    if (!email) return false;
+    let allowedStr = 'null@gmail.com';
+    try {
+        allowedStr = getEnv().ADMIN_EMAILS;
+    } catch {
+        allowedStr = process.env.ADMIN_EMAILS || 'null@gmail.com';
+    }
+    const allowed = allowedStr
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean);
+    return allowed.includes(email.trim().toLowerCase());
 }

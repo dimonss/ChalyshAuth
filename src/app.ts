@@ -11,6 +11,7 @@ import corsPlugin from './plugins/cors.plugin.js';
 import swaggerPlugin from './plugins/swagger.plugin.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { userRoutes } from './modules/user/user.routes.js';
+import { adminRoutes } from './modules/admin/admin.routes.js';
 import { getEnv } from './config/env.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -57,6 +58,12 @@ export async function buildApp() {
     const publicDir = join(__dirname, 'public');
     const privacyPolicyHtml = readFileSync(join(publicDir, 'privacy-policy.html'), 'utf-8');
     const termsOfServiceHtml = readFileSync(join(publicDir, 'terms-of-service.html'), 'utf-8');
+    const adminHtml = readFileSync(join(publicDir, 'admin.html'), 'utf-8');
+
+    // Root-level convenient routes
+    app.get('/admin', { schema: { hide: true } }, async (_request, reply) => {
+        return reply.type('text/html').send(adminHtml.replace('{{BASE_URL}}', baseUrl));
+    });
 
     await app.register(async (prefixed) => {
         // Public pages
@@ -68,8 +75,13 @@ export async function buildApp() {
             return reply.type('text/html').send(termsOfServiceHtml);
         });
 
+        prefixed.get('/admin', { schema: { hide: true } }, async (_request, reply) => {
+            return reply.type('text/html').send(adminHtml.replace('{{BASE_URL}}', baseUrl));
+        });
+
         await prefixed.register(authRoutes);
         await prefixed.register(userRoutes);
+        await prefixed.register(adminRoutes);
 
         // Health check
         prefixed.get('/health', {
