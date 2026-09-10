@@ -79,7 +79,7 @@ export async function adminRoutes(app: FastifyInstance) {
                 // 2. Strict email check for admin privileges
                 if (!isAdminEmail(googleUser.email)) {
                     return reply.status(403).send({
-                        message: `Access denied. The email ${googleUser.email} is not authorized to access the admin panel. Access is restricted to faimos69@gmail.com.`,
+                        message: 'Access denied. You are not authorized to access the admin panel.',
                     });
                 }
 

@@ -25,7 +25,7 @@ export async function requireAdmin(request: FastifyRequest, reply: FastifyReply)
 
     if (!isAdminEmail(user.email)) {
         return reply.status(403).send({
-            message: 'Access denied: Admin panel is restricted to authorized administrator email (faimos69@gmail.com)',
+            message: 'Access denied: You are not authorized to access the admin panel',
         });
     }
 
