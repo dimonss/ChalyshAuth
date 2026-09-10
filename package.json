@@ -1,12 +1,12 @@
 {
   "name": "chalysh-auth",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Global Telegram authentication service for pet projects",
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc && cp -r src/public dist/public",
+    "build": "tsc && rm -rf dist/public && cp -r src/public dist/public",
     "start": "node dist/server.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
