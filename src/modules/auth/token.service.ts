@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and, gt, lte } from 'drizzle-orm';
 import { getDb } from '../../db/connection.js';
 import { refreshTokens } from '../../db/schema.js';
 import { getEnv } from '../../config/env.js';
@@ -101,4 +101,17 @@ export function revokeRefreshToken(token: string): void {
 export function revokeAllUserTokens(userId: string): void {
     const db = getDb();
     db.delete(refreshTokens).where(eq(refreshTokens.userId, userId)).run();
+}
+
+/**
+ * Delete all expired refresh tokens from the database.
+ * Returns the number of removed tokens.
+ */
+export function cleanupExpiredTokens(): number {
+    const db = getDb();
+    const nowIso = new Date().toISOString();
+    const res = db.delete(refreshTokens)
+        .where(lte(refreshTokens.expiresAt, nowIso))
+        .run();
+    return res.changes;
 }

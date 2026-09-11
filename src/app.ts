@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import jwtPlugin from './plugins/jwt.plugin.js';
 import corsPlugin from './plugins/cors.plugin.js';
 import swaggerPlugin from './plugins/swagger.plugin.js';
+import cronPlugin from './plugins/cron.plugin.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { userRoutes } from './modules/user/user.routes.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
@@ -50,6 +51,7 @@ export async function buildApp() {
     await app.register(corsPlugin);
     await app.register(swaggerPlugin);
     await app.register(jwtPlugin);
+    await app.register(cronPlugin);
 
     // Routes — all under configurable BASE_URL prefix (default: /api)
     const baseUrl = getEnv().BASE_URL;
