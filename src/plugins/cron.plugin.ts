@@ -2,9 +2,12 @@ import fp from 'fastify-plugin';
 import cron from 'node-cron';
 import type { FastifyInstance } from 'fastify';
 import { cleanupExpiredTokens } from '../modules/auth/token.service.js';
+import { getEnv } from '../config/env.js';
 
 export default fp(async function cronPlugin(app: FastifyInstance) {
-    // Run daily at 04:00 AM (0 4 * * *) Bishkek time (Asia/Bishkek)
+    const timezone = getEnv().CRON_TIMEZONE;
+
+    // Run daily at 04:00 AM (0 4 * * *)
     const task = cron.schedule(
         '0 4 * * *',
         () => {
@@ -16,7 +19,7 @@ export default fp(async function cronPlugin(app: FastifyInstance) {
             }
         },
         {
-            timezone: 'Asia/Bishkek',
+            timezone,
         },
     );
 

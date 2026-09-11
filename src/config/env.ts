@@ -10,6 +10,7 @@ export const envSchema = z.object({
     PORT: z.coerce.number().default(3000),
     BASE_URL: z.string().default('/api'),
     ADMIN_EMAILS: z.string().default('null@gmail.com'),
+    CRON_TIMEZONE: z.string().default('Asia/Bishkek'),
 });
 
 export type Env = z.infer<typeof envSchema>;
