@@ -941,12 +941,92 @@
         // State
         const metaBase = document.querySelector('meta[name="base-url"]')?.getAttribute('content');
         const API_BASE = (metaBase && metaBase !== '{{BASE_URL}}') ? metaBase : '/api';
-        let accessToken = localStorage.getItem('chalysh_admin_token') || null;
         let currentUser = null;
         let currentPage = 1;
         let totalPages = 1;
         let searchDebounceTimer = null;
         let targetDeleteUserId = null;
+        let refreshPromise = null;
+
+        // Token Storage Helpers (standardized across projects on chalysh.pro)
+        function getAccessToken() {
+            return localStorage.getItem('accessToken') || localStorage.getItem('chalysh_admin_token') || null;
+        }
+
+        function getRefreshToken() {
+            return localStorage.getItem('refreshToken') || null;
+        }
+
+        function setTokens(access, refresh) {
+            if (access) {
+                localStorage.setItem('accessToken', access);
+            } else {
+                localStorage.removeItem('accessToken');
+            }
+            if (refresh) {
+                localStorage.setItem('refreshToken', refresh);
+            } else {
+                localStorage.removeItem('refreshToken');
+            }
+            // Cleanup legacy key if present
+            localStorage.removeItem('chalysh_admin_token');
+        }
+
+        function clearTokens() {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('chalysh_admin_token');
+        }
+
+        // Refresh Access Token
+        async function refreshAccessToken() {
+            const refreshToken = getRefreshToken();
+            if (!refreshToken) return false;
+
+            if (refreshPromise) {
+                return refreshPromise;
+            }
+
+            refreshPromise = (async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/auth/refresh`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refreshToken }),
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 400 || response.status === 401 || response.status === 403) {
+                            clearTokens();
+                        }
+                        return false;
+                    }
+
+                    const data = await response.json();
+                    if (!data.accessToken || !data.refreshToken) {
+                        clearTokens();
+                        return false;
+                    }
+
+                    setTokens(data.accessToken, data.refreshToken);
+                    return true;
+                } catch {
+                    return false;
+                } finally {
+                    refreshPromise = null;
+                }
+            })();
+
+            return refreshPromise;
+        }
+
+        // Synchronize auth state across tabs
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'accessToken' && !e.newValue) {
+                currentUser = null;
+                showLogin();
+            }
+        });
 
         // Elements
         const viewLogin = document.getElementById('view-login');
@@ -984,20 +1064,33 @@
             }, 3500);
         }
 
-        // Authenticated Fetch
+        // Authenticated Fetch with auto-refresh on 401
         async function apiFetch(endpoint, options = {}) {
+            let token = getAccessToken();
             const headers = {
                 'Content-Type': 'application/json',
                 ...(options.headers || {})
             };
-            if (accessToken) {
-                headers['Authorization'] = `Bearer ${accessToken}`;
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
             }
 
-            const response = await fetch(`${API_BASE}${endpoint}`, {
+            let response = await fetch(`${API_BASE}${endpoint}`, {
                 ...options,
                 headers
             });
+
+            if (response.status === 401) {
+                const refreshed = await refreshAccessToken();
+                if (refreshed) {
+                    token = getAccessToken();
+                    headers['Authorization'] = `Bearer ${token}`;
+                    response = await fetch(`${API_BASE}${endpoint}`, {
+                        ...options,
+                        headers
+                    });
+                }
+            }
 
             if (response.status === 401) {
                 logout();
@@ -1023,7 +1116,7 @@
                 console.error('Config fetch failed', err);
             }
 
-            if (accessToken) {
+            if (getAccessToken() || getRefreshToken()) {
                 await verifySession();
             } else {
                 showLogin();
@@ -1083,8 +1176,7 @@
                     throw new Error(data.message || 'Ошибка авторизации');
                 }
 
-                accessToken = data.accessToken;
-                localStorage.setItem('chalysh_admin_token', accessToken);
+                setTokens(data.accessToken, data.refreshToken);
                 currentUser = data.user;
 
                 showToast(`Добро пожаловать, ${currentUser.firstName}!`, 'success');
@@ -1103,6 +1195,11 @@
                 if (res.ok) {
                     currentUser = await res.json();
                     showDashboard();
+                } else if (res.status === 403) {
+                    const errData = await res.json().catch(() => ({}));
+                    showLogin();
+                    loginErrorBox.textContent = errData.message || 'Доступ запрещен: у вас нет прав администратора';
+                    loginErrorBox.style.display = 'block';
                 } else {
                     logout();
                 }
@@ -1115,6 +1212,10 @@
             viewLogin.classList.remove('hidden');
             viewDashboard.classList.add('hidden');
             headerUserPanel.classList.add('hidden');
+            if (loginErrorBox) {
+                loginErrorBox.style.display = 'none';
+                loginErrorBox.textContent = '';
+            }
         }
 
         function showDashboard() {
@@ -1133,10 +1234,21 @@
             loadUsers();
         }
 
-        function logout() {
-            accessToken = null;
+        async function logout() {
+            const refreshToken = getRefreshToken();
+            if (refreshToken) {
+                try {
+                    await fetch(`${API_BASE}/auth/logout`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refreshToken })
+                    });
+                } catch {
+                    // Ignore logout API error
+                }
+            }
             currentUser = null;
-            localStorage.removeItem('chalysh_admin_token');
+            clearTokens();
             showLogin();
         }
 
