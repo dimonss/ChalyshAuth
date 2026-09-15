@@ -6,6 +6,7 @@ import {
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import fastifyStatic from '@fastify/static';
 import jwtPlugin from './plugins/jwt.plugin.js';
 import corsPlugin from './plugins/cors.plugin.js';
 import swaggerPlugin from './plugins/swagger.plugin.js';
@@ -55,30 +56,46 @@ export async function buildApp() {
 
     // Routes — all under configurable BASE_URL prefix (default: /api)
     const baseUrl = getEnv().BASE_URL;
+    const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const staticPrefix = normalizedBaseUrl ? `${normalizedBaseUrl}/static/` : '/static/';
+
+    // Static files plugin registered once with prefix matching baseUrl
+    const publicDir = join(__dirname, 'public');
+    await app.register(fastifyStatic, {
+        root: publicDir,
+        prefix: staticPrefix,
+        decorateReply: false,
+    });
+
+    // Helper to render HTML with template variables
+    const renderHtml = (html: string) => {
+        return html
+            .replace(/\{\{BASE_URL\}\}/g, baseUrl)
+            .replace(/\{\{STATIC_URL\}\}/g, `${staticPrefix.endsWith('/') ? staticPrefix.slice(0, -1) : staticPrefix}`);
+    };
 
     // Pre-load static public pages into memory at startup
-    const publicDir = join(__dirname, 'public');
     const privacyPolicyHtml = readFileSync(join(publicDir, 'privacy-policy.html'), 'utf-8');
     const termsOfServiceHtml = readFileSync(join(publicDir, 'terms-of-service.html'), 'utf-8');
     const adminHtml = readFileSync(join(publicDir, 'admin.html'), 'utf-8');
 
     // Root-level convenient routes
     app.get('/admin', { schema: { hide: true } }, async (_request, reply) => {
-        return reply.type('text/html').send(adminHtml.replace('{{BASE_URL}}', baseUrl));
+        return reply.type('text/html').send(renderHtml(adminHtml));
     });
 
     await app.register(async (prefixed) => {
         // Public pages
         prefixed.get('/privacy-policy', { schema: { hide: true } }, async (_request, reply) => {
-            return reply.type('text/html').send(privacyPolicyHtml);
+            return reply.type('text/html').send(renderHtml(privacyPolicyHtml));
         });
 
         prefixed.get('/terms-of-service', { schema: { hide: true } }, async (_request, reply) => {
-            return reply.type('text/html').send(termsOfServiceHtml);
+            return reply.type('text/html').send(renderHtml(termsOfServiceHtml));
         });
 
         prefixed.get('/admin', { schema: { hide: true } }, async (_request, reply) => {
-            return reply.type('text/html').send(adminHtml.replace('{{BASE_URL}}', baseUrl));
+            return reply.type('text/html').send(renderHtml(adminHtml));
         });
 
         await prefixed.register(authRoutes);
