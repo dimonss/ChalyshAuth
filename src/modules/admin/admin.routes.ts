@@ -1,10 +1,19 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { getEnv, isAdminEmail } from '../../config/env.js';
+import { eq } from 'drizzle-orm';
+import { getDb } from '../../db/connection.js';
+import { users } from '../../db/schema.js';
+import {
+    getEnv,
+    isAdminEmail,
+    isAdminUser,
+    getTelegramBotUsername,
+} from '../../config/env.js';
 import { verifyGoogleIdToken } from '../auth/google.service.js';
-import { loginOrRegisterGoogle } from '../auth/auth.service.js';
-import { authResponseSchema } from '../auth/auth.schemas.js';
+import { verifyTelegramAuth } from '../auth/telegram.service.js';
+import { loginOrRegister, loginOrRegisterGoogle } from '../auth/auth.service.js';
+import { authResponseSchema, telegramAuthSchema } from '../auth/auth.schemas.js';
 import { requireAdmin } from './admin.guard.js';
 import {
     adminConfigResponseSchema,
@@ -33,23 +42,87 @@ export async function adminRoutes(app: FastifyInstance) {
 
     /**
      * GET /admin/config
-     * Public config for frontend Google Sign-In initialization.
+     * Public config for frontend Google Sign-In and Telegram Widget initialization.
      */
     typedApp.get(
         '/admin/config',
         {
             schema: {
                 tags: ['Admin'],
-                description: 'Get public configuration for admin frontend (Google Client ID)',
+                description: 'Get public configuration for admin frontend (Google Client ID & Telegram Bot Username)',
                 response: {
                     200: adminConfigResponseSchema,
                 },
             },
         },
         async () => {
+            const telegramBotUsername = await getTelegramBotUsername();
             return {
                 googleClientId: getEnv().GOOGLE_CLIENT_ID,
+                telegramBotUsername,
             };
+        },
+    );
+
+    /**
+     * POST /admin/auth/telegram
+     * Login to admin panel using Telegram Widget data, verifying admin authorization.
+     */
+    typedApp.post(
+        '/admin/auth/telegram',
+        {
+            schema: {
+                tags: ['Admin'],
+                description: 'Authenticate as administrator via Telegram Login Widget data',
+                body: telegramAuthSchema,
+                response: {
+                    200: authResponseSchema,
+                    401: adminMessageResponseSchema,
+                    403: adminMessageResponseSchema,
+                    500: adminMessageResponseSchema,
+                },
+            },
+        },
+        async (request, reply) => {
+            // 1. Verify Telegram hash
+            const env = getEnv();
+            const isValid = verifyTelegramAuth(request.body, env.TELEGRAM_BOT_TOKEN);
+            if (!isValid) {
+                return reply.status(401).send({
+                    message: 'Invalid Telegram authentication data',
+                });
+            }
+
+            // 2. Unified check for admin privileges (by username or pre-linked email)
+            const db = getDb();
+            const existingUser = db
+                .select()
+                .from(users)
+                .where(eq(users.telegramId, request.body.id))
+                .limit(1)
+                .get();
+
+            const isAuthorized = isAdminUser({
+                email: existingUser?.email,
+                username: request.body.username,
+            });
+
+            if (!isAuthorized) {
+                return reply.status(403).send({
+                    message: 'Access denied. You are not authorized to access the admin panel.',
+                });
+            }
+
+            // 3. Perform login or registration
+            try {
+                const authResult = await loginOrRegister(app, request.body);
+                return reply.send(authResult);
+            } catch (err: unknown) {
+                request.log.error(err, 'Unexpected error during Telegram admin authentication');
+                return reply.status(500).send({
+                    message: 'Internal server error during authentication',
+                });
+            }
         },
     );
 
@@ -68,27 +141,36 @@ export async function adminRoutes(app: FastifyInstance) {
                     200: authResponseSchema,
                     401: adminMessageResponseSchema,
                     403: adminMessageResponseSchema,
+                    500: adminMessageResponseSchema,
                 },
             },
         },
         async (request, reply) => {
+            // 1. Verify Google token first
+            let googleUser;
             try {
-                // 1. Verify Google token first
-                const googleUser = await verifyGoogleIdToken(request.body.idToken);
+                googleUser = await verifyGoogleIdToken(request.body.idToken);
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : 'Invalid Google ID token';
+                return reply.status(401).send({ message });
+            }
 
-                // 2. Strict email check for admin privileges
-                if (!isAdminEmail(googleUser.email)) {
-                    return reply.status(403).send({
-                        message: 'Access denied. You are not authorized to access the admin panel.',
-                    });
-                }
+            // 2. Strict email check for admin privileges
+            if (!isAdminEmail(googleUser.email)) {
+                return reply.status(403).send({
+                    message: 'Access denied. You are not authorized to access the admin panel.',
+                });
+            }
 
-                // 3. Perform login or registration
+            // 3. Perform login or registration
+            try {
                 const authResult = await loginOrRegisterGoogle(app, request.body.idToken);
                 return reply.send(authResult);
             } catch (err: unknown) {
-                const message = err instanceof Error ? err.message : 'Google authentication failed';
-                return reply.status(401).send({ message });
+                request.log.error(err, 'Unexpected error during Google admin authentication');
+                return reply.status(500).send({
+                    message: 'Internal server error during authentication',
+                });
             }
         },
     );

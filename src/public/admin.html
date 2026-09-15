@@ -273,10 +273,41 @@
             gap: 0.5rem;
         }
 
+        .login-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            align-items: center;
+            width: 100%;
+        }
+
         .login-btn-container {
             display: flex;
             justify-content: center;
             min-height: 48px;
+            width: 100%;
+        }
+
+        .login-divider {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 280px;
+            margin: 0.25rem 0;
+            color: var(--text-muted);
+            font-size: 0.8125rem;
+            text-transform: lowercase;
+        }
+
+        .login-divider::before,
+        .login-divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .login-divider span {
+            padding: 0 0.75rem;
         }
 
         .login-error {
@@ -756,15 +787,25 @@
             <div class="login-card">
                 <div class="login-icon">🔒</div>
                 <h2>Авторизация</h2>
-                <p>Войдите через Google для управления пользователями микросервиса</p>
+                <p>Войдите через Telegram или Google для управления микросервисом</p>
 
                 <div class="restricted-notice">
                     <span>⚠️</span>
                     <span>Доступ только для авторизованных администраторов</span>
                 </div>
 
-                <div class="login-btn-container" id="google-signin-wrapper">
-                    <div id="google-btn"></div>
+                <div class="login-buttons">
+                    <div class="login-btn-container hidden" id="telegram-signin-wrapper">
+                        <div id="telegram-login-btn"></div>
+                    </div>
+                    <div class="login-divider hidden" id="login-divider"><span>или</span></div>
+                    <div class="login-btn-container hidden" id="google-signin-wrapper">
+                        <div id="google-btn"></div>
+                    </div>
+                    <div id="no-auth-warning" class="restricted-notice hidden" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #fca5a5; margin-bottom: 0;">
+                        <span>⚠️</span>
+                        <span>Провайдеры авторизации не настроены. Укажите TELEGRAM_BOT_TOKEN / TELEGRAM_BOT_USERNAME или GOOGLE_CLIENT_ID в .env</span>
+                    </div>
                 </div>
 
                 <div id="login-error-box" class="login-error"></div>
@@ -1035,6 +1076,10 @@
         const adminEmailDisplay = document.getElementById('admin-email-display');
         const adminAvatar = document.getElementById('admin-avatar');
         const loginErrorBox = document.getElementById('login-error-box');
+        const telegramSigninWrapper = document.getElementById('telegram-signin-wrapper');
+        const googleSigninWrapper = document.getElementById('google-signin-wrapper');
+        const loginDivider = document.getElementById('login-divider');
+        const noAuthWarning = document.getElementById('no-auth-warning');
 
         const statTotal = document.getElementById('stat-total');
         const statTg = document.getElementById('stat-tg');
@@ -1107,10 +1152,25 @@
                 const res = await fetch(`${API_BASE}/admin/config`);
                 const config = await res.json();
 
+                let hasTg = false;
+                let hasGoogle = false;
+
+                if (config.telegramBotUsername) {
+                    initTelegramAuth(config.telegramBotUsername);
+                    telegramSigninWrapper.classList.remove('hidden');
+                    hasTg = true;
+                }
+
                 if (config.googleClientId) {
                     initGoogleAuth(config.googleClientId);
-                } else {
-                    console.warn('Google Client ID not configured');
+                    googleSigninWrapper.classList.remove('hidden');
+                    hasGoogle = true;
+                }
+
+                if (hasTg && hasGoogle) {
+                    loginDivider.classList.remove('hidden');
+                } else if (!hasTg && !hasGoogle) {
+                    noAuthWarning.classList.remove('hidden');
                 }
             } catch (err) {
                 console.error('Config fetch failed', err);
@@ -1122,6 +1182,50 @@
                 showLogin();
             }
         }
+
+        // Initialize Telegram Login Widget
+        function initTelegramAuth(botUsername) {
+            const container = document.getElementById('telegram-login-btn');
+            if (!container) return;
+            container.innerHTML = '';
+            const script = document.createElement('script');
+            script.async = true;
+            script.src = 'https://telegram.org/js/telegram-widget.js?22';
+            script.setAttribute('data-telegram-login', botUsername);
+            script.setAttribute('data-size', 'large');
+            script.setAttribute('data-radius', '10');
+            script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+            script.setAttribute('data-request-access', 'write');
+            container.appendChild(script);
+        }
+
+        // Global callback for Telegram Login Widget
+        window.onTelegramAuth = async function (user) {
+            loginErrorBox.style.display = 'none';
+            try {
+                const res = await fetch(`${API_BASE}/admin/auth/telegram`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(user)
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.message || 'Ошибка авторизации через Telegram');
+                }
+
+                setTokens(data.accessToken, data.refreshToken);
+                currentUser = data.user;
+
+                showToast(`Добро пожаловать, ${currentUser.firstName}!`, 'success');
+                showDashboard();
+            } catch (err) {
+                loginErrorBox.textContent = err.message;
+                loginErrorBox.style.display = 'block';
+                showToast(err.message, 'error');
+            }
+        };
 
         // Initialize Google GIS
         function initGoogleAuth(clientId) {
@@ -1224,7 +1328,11 @@
             headerUserPanel.classList.remove('hidden');
 
             if (currentUser) {
-                adminEmailDisplay.textContent = currentUser.email || 'Admin';
+                const displayName = currentUser.email
+                    || (currentUser.username ? '@' + currentUser.username : null)
+                    || `${currentUser.firstName}${currentUser.lastName ? ' ' + currentUser.lastName : ''}`
+                    || 'Admin';
+                adminEmailDisplay.textContent = displayName;
                 if (currentUser.photoUrl) {
                     adminAvatar.src = currentUser.photoUrl;
                 }

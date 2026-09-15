@@ -32,7 +32,7 @@
 - **User Profiles** — unified user accounts supporting Telegram, Google, or linked profiles
 - **Additional Fields** — flexible JSON storage for arbitrary per-user data (e.g. game scores, user preferences)
 - **Leaderboard** — built-in endpoint to retrieve top players by game high scores
-- **Admin Panel** — web UI (`/admin`) for administrators with Google Sign-In, statistics, user search, filtering, and data editing
+- **Admin Panel** — web UI (`/admin`) for administrators with Telegram and Google Sign-In, statistics, user search, filtering, and data editing
 - **Swagger / OpenAPI** — interactive API documentation UI available at `<BASE_URL>/docs`
 - **Public Pages** — static Privacy Policy and Terms of Service endpoints
 - **Input Validation** — strict request/response validation via Zod schemas
@@ -177,6 +177,8 @@ Configure your `.env` file based on `.env.example`:
 | `PORT`                    | HTTP port to listen on                                     | `3000`                   |
 | `BASE_URL`                | Route prefix for all API endpoints                         | `/api`                   |
 | `ADMIN_EMAILS`            | Comma-separated list of emails with admin panel privileges | `null@gmail.com`         |
+| `ADMIN_TELEGRAM_USERNAMES`| Comma-separated list of Telegram usernames with admin privileges| `""`                |
+| `TELEGRAM_BOT_USERNAME`   | Telegram bot username without @ for Telegram Login Widget  | `""` (auto-detected)     |
 | `CRON_TIMEZONE`           | Timezone for scheduled cron tasks (e.g. daily cleanup)      | `Asia/Bishkek`           |
 
 ---
@@ -456,14 +458,18 @@ Returns top 10 users ranked by `additionalFields.spaceShooterGame.bestScore`.
 
 The service includes a built-in admin web interface served at `/admin` (or `<BASE_URL>/admin`). It allows authorized administrators to view system statistics, browse registered users, filter by auth provider (Telegram / Google), search across records, edit user profiles/additional fields, and delete accounts.
 
-Access to admin endpoints is strictly restricted by email whitelist defined in `ADMIN_EMAILS`.
+Access to admin endpoints is strictly restricted by email whitelist defined in `ADMIN_EMAILS` and Telegram usernames defined in `ADMIN_TELEGRAM_USERNAMES`.
+
+> [!NOTE]
+> **Telegram Usernames**: Specify administrator Telegram usernames (with or without `@`) in `ADMIN_TELEGRAM_USERNAMES` separated by commas (e.g. `chalysh,myadmin`). Note that usernames in Telegram can be changed by users.
 
 ### Admin API Endpoints (`/api/admin`)
 
-| Method | Endpoint                  | Auth             | Description                                                   |
-| ------ | ------------------------- | ---------------- | ------------------------------------------------------------- |
-| GET    | `/api/admin/config`       | ✗                | Returns `{ googleClientId }` for admin frontend login         |
-| POST   | `/api/admin/auth/google`  | ✗                | Authenticates admin via Google ID token (validates email)     |
+| Method | Endpoint                    | Auth             | Description                                                   |
+| ------ | --------------------------- | ---------------- | ------------------------------------------------------------- |
+| GET    | `/api/admin/config`         | ✗                | Returns `{ googleClientId, telegramBotUsername }` for login  |
+| POST   | `/api/admin/auth/telegram`  | ✗                | Authenticates admin via Telegram Login Widget data            |
+| POST   | `/api/admin/auth/google`    | ✗                | Authenticates admin via Google ID token (validates email)     |
 | GET    | `/api/admin/me`           | 🔒 Admin Bearer  | Verifies admin session and returns current admin details      |
 | GET    | `/api/admin/stats`        | 🔒 Admin Bearer  | Total users, Telegram/Google count, active refresh tokens     |
 | GET    | `/api/admin/users`        | 🔒 Admin Bearer  | Paginated users with search, provider filter, and sorting     |
@@ -599,7 +605,7 @@ ISC
 - **Профили пользователей** — единые учетные записи с поддержкой Telegram, Google и объединения данных
 - **Дополнительные поля** — гибкое JSON-хранилище для произвольных пользовательских данных (рекорды в играх, настройки и т.д.)
 - **Таблица лидеров** — готовый эндпоинт для получения рейтинга игроков по очкам
-- **Панель администратора** — встроенный веб-интерфейс (`/admin`) со входом через Google, статистикой, поиском, фильтрацией и редактированием пользователей
+- **Панель администратора** — встроенный веб-интерфейс (`/admin`) со входом через Telegram и Google, статистикой, поиском, фильтрацией и редактированием пользователей
 - **Swagger / OpenAPI** — интерактивная документация API, доступная по адресу `<BASE_URL>/docs`
 - **Публичные страницы** — статические страницы Политики конфиденциальности и Условий использования
 - **Валидация** — строгая валидация входящих и исходящих данных на базе схем Zod
@@ -744,6 +750,8 @@ npm run start:prod
 | `PORT`                     | Порт HTTP-сервера                                             | `3000`                   |
 | `BASE_URL`                 | Префикс для всех маршрутов API                                | `/api`                   |
 | `ADMIN_EMAILS`             | Список email администраторов через запятую                    | `null@gmail.com`         |
+| `ADMIN_TELEGRAM_USERNAMES` | Список юзернеймов Telegram администраторов через запятую      | `""`                     |
+| `TELEGRAM_BOT_USERNAME`    | Юзернейм бота без @ для Telegram Login Widget                 | `""` (автоопределение)   |
 | `CRON_TIMEZONE`            | Часовой пояс для задач cron (очистка токенов)                 | `Asia/Bishkek`           |
 
 ---
@@ -1023,14 +1031,18 @@ Authorization: Bearer <accessToken>
 
 Сервис содержит встроенный веб-интерфейс администратора, доступный по адресу `/admin` (или `<BASE_URL>/admin`). Интерфейс позволяет авторизованным администраторам просматривать системную статистику, список пользователей, фильтровать по провайдеру (Telegram / Google), выполнять поиск, редактировать профиль и поле `additionalFields`, а также удалять пользователей.
 
-Доступ к панели администрирования строго ограничен белым списком email-адресов, заданных в `ADMIN_EMAILS`.
+Доступ к панели администрирования ограничен списками разрешенных адресов `ADMIN_EMAILS` и юзернеймов Telegram `ADMIN_TELEGRAM_USERNAMES`.
+
+> [!NOTE]
+> **Юзернеймы Telegram**: Укажите Telegram-юзернеймы администраторов (с `@` или без него) в переменной `ADMIN_TELEGRAM_USERNAMES` через запятую (например, `chalysh,myadmin`). Обратите внимание, что пользователи могут изменять свои юзернеймы в Telegram.
 
 ### API администратора (`/api/admin`)
 
-| Метод  | Эндпоинт                  | Авторизация      | Описание                                                      |
-| ------ | ------------------------- | ---------------- | ------------------------------------------------------------- |
-| GET    | `/api/admin/config`       | ✗                | Возвращает `{ googleClientId }` для инициализации входа Google|
-| POST   | `/api/admin/auth/google`  | ✗                | Вход администратора по Google ID токену (проверка по списку)  |
+| Метод  | Эндпоинт                    | Авторизация      | Описание                                                      |
+| ------ | --------------------------- | ---------------- | ------------------------------------------------------------- |
+| GET    | `/api/admin/config`         | ✗                | Возвращает `{ googleClientId, telegramBotUsername }` для входа|
+| POST   | `/api/admin/auth/telegram`  | ✗                | Вход администратора через Telegram Login Widget (проверка прав)|
+| POST   | `/api/admin/auth/google`    | ✗                | Вход администратора по Google ID токену (проверка по списку)  |
 | GET    | `/api/admin/me`           | 🔒 Admin Bearer  | Проверка прав и получение профиля текущего администратора     |
 | GET    | `/api/admin/stats`        | 🔒 Admin Bearer  | Общее число пользователей, Telegram/Google, активные токены   |
 | GET    | `/api/admin/users`        | 🔒 Admin Bearer  | Список пользователей с пагинацией, поиском и фильтрацией      |

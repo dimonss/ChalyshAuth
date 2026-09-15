@@ -2,7 +2,7 @@ import type { FastifyRequest, FastifyReply } from 'fastify';
 import { eq } from 'drizzle-orm';
 import { getDb } from '../../db/connection.js';
 import { users } from '../../db/schema.js';
-import { isAdminEmail } from '../../config/env.js';
+import { isAdminUser } from '../../config/env.js';
 
 export async function requireAdmin(request: FastifyRequest, reply: FastifyReply) {
     try {
@@ -23,7 +23,7 @@ export async function requireAdmin(request: FastifyRequest, reply: FastifyReply)
         return reply.status(401).send({ message: 'Unauthorized: User not found' });
     }
 
-    if (!isAdminEmail(user.email)) {
+    if (!isAdminUser(user)) {
         return reply.status(403).send({
             message: 'Access denied: You are not authorized to access the admin panel',
         });

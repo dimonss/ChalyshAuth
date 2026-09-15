@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const adminConfigResponseSchema = z.object({
     googleClientId: z.string(),
+    telegramBotUsername: z.string(),
 });
 
 export const adminLoginSchema = z.object({
