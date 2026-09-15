@@ -1,6 +1,6 @@
 {
   "name": "chalysh-auth",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "description": "Global Telegram authentication service for pet projects",
   "main": "dist/server.js",
   "type": "module",
