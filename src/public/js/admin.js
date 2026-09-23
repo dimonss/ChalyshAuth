@@ -10,7 +10,7 @@ let refreshPromise = null;
 
 // Token Storage Helpers (standardized across projects on chalysh.pro)
 function getAccessToken() {
-    return localStorage.getItem('accessToken') || localStorage.getItem('chalysh_admin_token') || null;
+    return localStorage.getItem('accessToken') || null;
 }
 
 function getRefreshToken() {
@@ -28,14 +28,11 @@ function setTokens(access, refresh) {
     } else {
         localStorage.removeItem('refreshToken');
     }
-    // Cleanup legacy key if present
-    localStorage.removeItem('chalysh_admin_token');
 }
 
 function clearTokens() {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
-    localStorage.removeItem('chalysh_admin_token');
 }
 
 // Refresh Access Token
