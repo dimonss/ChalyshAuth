@@ -554,15 +554,16 @@ function openLogoutModal() {
 
         // Google
         const gRow = document.createElement('div');
-        gRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1rem; border-radius: var(--radius-md); background: var(--bg-primary); border: 1px solid var(--border);';
+        gRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; padding: 0.875rem 1rem; border-radius: var(--radius-md); background: var(--bg-primary); border: 1px solid var(--border);';
         gRow.innerHTML = `
-            <div>
+            <div style="flex: 1 1 200px;">
                 <div style="font-weight: 600; font-size: 0.875rem; color: #93c5fd;">🔵 Google</div>
                 <div style="font-size: 0.75rem; color: var(--text-muted);">Завершить сессию Google. Telegram останется активным.</div>
             </div>
         `;
         const gBtn = document.createElement('button');
         gBtn.className = 'btn btn-ghost btn-sm';
+        gBtn.style.whiteSpace = 'nowrap';
         gBtn.textContent = 'Выйти из Google';
         gBtn.onclick = async () => {
             gBtn.disabled = true;
@@ -574,15 +575,16 @@ function openLogoutModal() {
 
         // Telegram
         const tRow = document.createElement('div');
-        tRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1rem; border-radius: var(--radius-md); background: var(--bg-primary); border: 1px solid var(--border);';
+        tRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; padding: 0.875rem 1rem; border-radius: var(--radius-md); background: var(--bg-primary); border: 1px solid var(--border);';
         tRow.innerHTML = `
-            <div>
+            <div style="flex: 1 1 200px;">
                 <div style="font-weight: 600; font-size: 0.875rem; color: #38bdf8;">✈️ Telegram</div>
                 <div style="font-size: 0.75rem; color: var(--text-muted);">Завершить сессию Telegram. Google останется активным.</div>
             </div>
         `;
         const tBtn = document.createElement('button');
         tBtn.className = 'btn btn-ghost btn-sm';
+        tBtn.style.whiteSpace = 'nowrap';
         tBtn.textContent = 'Выйти из Telegram';
         tBtn.onclick = async () => {
             tBtn.disabled = true;
@@ -594,15 +596,16 @@ function openLogoutModal() {
 
         // All
         const allRow = document.createElement('div');
-        allRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1rem; border-radius: var(--radius-md); background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25);';
+        allRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; padding: 0.875rem 1rem; border-radius: var(--radius-md); background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25);';
         allRow.innerHTML = `
-            <div>
+            <div style="flex: 1 1 200px;">
                 <div style="font-weight: 600; font-size: 0.875rem; color: #f87171;">🚪 Выйти со всех сразу</div>
                 <div style="font-size: 0.75rem; color: var(--text-muted);">Полный выход из обоих аккаунтов во всех сервисах.</div>
             </div>
         `;
         const allBtn = document.createElement('button');
         allBtn.className = 'btn btn-danger btn-sm';
+        allBtn.style.whiteSpace = 'nowrap';
         allBtn.textContent = 'Выйти со всех';
         allBtn.onclick = async () => {
             allBtn.disabled = true;
@@ -614,15 +617,16 @@ function openLogoutModal() {
     } else {
         const currentName = hasGoogle ? '🔵 Google (активен)' : '✈️ Telegram (активен)';
         const singleRow = document.createElement('div');
-        singleRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1rem; border-radius: var(--radius-md); background: var(--bg-primary); border: 1px solid var(--border);';
+        singleRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; padding: 0.875rem 1rem; border-radius: var(--radius-md); background: var(--bg-primary); border: 1px solid var(--border);';
         singleRow.innerHTML = `
-            <div>
+            <div style="flex: 1 1 200px;">
                 <div style="font-weight: 600; font-size: 0.875rem; color: var(--text-primary);">${currentName}</div>
                 <div style="font-size: 0.75rem; color: var(--text-muted);">Текущая активная сессия</div>
             </div>
         `;
         const outBtn = document.createElement('button');
         outBtn.className = 'btn btn-danger btn-sm';
+        outBtn.style.whiteSpace = 'nowrap';
         outBtn.textContent = 'Выйти со всех сервисов';
         outBtn.onclick = async () => {
             outBtn.disabled = true;
