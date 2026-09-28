@@ -9,31 +9,96 @@ let targetDeleteUserId = null;
 let refreshPromise = null;
 
 // Token Storage Helpers (standardized across projects on chalysh.pro)
+const APP_ID = 'chalysh_admin';
+const APP_PROVIDER_KEY = `${APP_ID}_auth_provider`;
+
+function hasTokensFor(provider) {
+    return !!localStorage.getItem(`${provider}_accessToken`) && !!localStorage.getItem(`${provider}_refreshToken`);
+}
+
+function getAvailableProviders() {
+    const list = [];
+    if (hasTokensFor('google')) list.push('google');
+    if (hasTokensFor('telegram')) list.push('telegram');
+    return list;
+}
+
+function getActiveProvider() {
+    const hasGoogle = hasTokensFor('google');
+    const hasTelegram = hasTokensFor('telegram');
+
+    if (!hasGoogle && !hasTelegram) {
+        return null;
+    }
+    if (hasGoogle && !hasTelegram) {
+        return 'google';
+    }
+    if (hasTelegram && !hasGoogle) {
+        return 'telegram';
+    }
+
+    const stored = localStorage.getItem(APP_PROVIDER_KEY);
+    if (stored === 'google' || stored === 'telegram') {
+        return stored;
+    }
+
+    return 'google';
+}
+
+function setActiveProvider(provider) {
+    localStorage.setItem(APP_PROVIDER_KEY, provider);
+}
+
 function getAccessToken() {
-    return localStorage.getItem('accessToken') || null;
+    const provider = getActiveProvider();
+    if (!provider) return null;
+    return localStorage.getItem(`${provider}_accessToken`) || null;
 }
 
 function getRefreshToken() {
-    return localStorage.getItem('refreshToken') || null;
+    const provider = getActiveProvider();
+    if (!provider) return null;
+    return localStorage.getItem(`${provider}_refreshToken`) || null;
 }
 
-function setTokens(access, refresh) {
+function setTokens(access, refresh, provider) {
+    const target = provider || getActiveProvider() || 'google';
     if (access) {
-        localStorage.setItem('accessToken', access);
+        localStorage.setItem(`${target}_accessToken`, access);
     } else {
-        localStorage.removeItem('accessToken');
+        localStorage.removeItem(`${target}_accessToken`);
     }
     if (refresh) {
-        localStorage.setItem('refreshToken', refresh);
+        localStorage.setItem(`${target}_refreshToken`, refresh);
     } else {
-        localStorage.removeItem('refreshToken');
+        localStorage.removeItem(`${target}_refreshToken`);
+    }
+    localStorage.setItem(APP_PROVIDER_KEY, target);
+}
+
+function clearTokens(onlyCurrent = true) {
+    const current = getActiveProvider();
+    if (current && onlyCurrent) {
+        localStorage.removeItem(`${current}_accessToken`);
+        localStorage.removeItem(`${current}_refreshToken`);
+        localStorage.removeItem(`${current}_user`);
+        const remaining = getActiveProvider();
+        if (remaining) {
+            localStorage.setItem(APP_PROVIDER_KEY, remaining);
+        } else {
+            localStorage.removeItem(APP_PROVIDER_KEY);
+        }
+    } else {
+        localStorage.removeItem('google_accessToken');
+        localStorage.removeItem('google_refreshToken');
+        localStorage.removeItem('google_user');
+        localStorage.removeItem('telegram_accessToken');
+        localStorage.removeItem('telegram_refreshToken');
+        localStorage.removeItem('telegram_user');
+        localStorage.removeItem(APP_PROVIDER_KEY);
     }
 }
 
-function clearTokens() {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-}
 
 // Refresh Access Token
 async function refreshAccessToken() {
@@ -79,11 +144,14 @@ async function refreshAccessToken() {
 
 // Synchronize auth state across tabs
 window.addEventListener('storage', (e) => {
-    if (e.key === 'accessToken' && !e.newValue) {
-        currentUser = null;
-        showLogin();
+    if ((e.key === 'google_accessToken' || e.key === 'telegram_accessToken') && !e.newValue) {
+        if (!getAccessToken()) {
+            currentUser = null;
+            showLogin();
+        }
     }
 });
+
 
 // Elements
 const viewLogin = document.getElementById('view-login');
@@ -231,7 +299,8 @@ window.onTelegramAuth = async function (user) {
             throw new Error(data.message || 'Ошибка авторизации через Telegram');
         }
 
-        setTokens(data.accessToken, data.refreshToken);
+        setTokens(data.accessToken, data.refreshToken, 'telegram');
+        localStorage.setItem('telegram_user', JSON.stringify(data.user));
         currentUser = data.user;
 
         showToast(`Добро пожаловать, ${currentUser.firstName}!`, 'success');
@@ -296,7 +365,8 @@ async function handleGoogleLogin(response) {
             throw new Error(data.message || 'Ошибка авторизации');
         }
 
-        setTokens(data.accessToken, data.refreshToken);
+        setTokens(data.accessToken, data.refreshToken, 'google');
+        localStorage.setItem('google_user', JSON.stringify(data.user));
         currentUser = data.user;
 
         showToast(`Добро пожаловать, ${currentUser.firstName}!`, 'success');
@@ -314,6 +384,10 @@ async function verifySession() {
         const res = await apiFetch('/admin/me');
         if (res.ok) {
             currentUser = await res.json();
+            const provider = getActiveProvider();
+            if (provider) {
+                localStorage.setItem(`${provider}_user`, JSON.stringify(currentUser));
+            }
             showDashboard();
         } else if (res.status === 403) {
             const errData = await res.json().catch(() => ({}));
@@ -321,10 +395,10 @@ async function verifySession() {
             loginErrorBox.textContent = errData.message || 'Доступ запрещен: у вас нет прав администратора';
             loginErrorBox.style.display = 'block';
         } else {
-            logout();
+            await logout();
         }
     } catch {
-        logout();
+        await logout();
     }
 }
 
@@ -343,6 +417,9 @@ function showDashboard() {
     viewDashboard.classList.remove('hidden');
     headerUserPanel.classList.remove('hidden');
 
+    const provider = getActiveProvider();
+    const available = getAvailableProviders();
+
     if (currentUser) {
         const displayName = currentUser.email
             || (currentUser.username ? '@' + currentUser.username : null)
@@ -351,6 +428,32 @@ function showDashboard() {
         adminEmailDisplay.textContent = displayName;
         if (currentUser.photoUrl) {
             adminAvatar.src = currentUser.photoUrl;
+        }
+    }
+
+    const providerBadge = document.getElementById('admin-provider-badge');
+    if (providerBadge) {
+        if (provider) {
+            providerBadge.textContent = provider === 'google' ? '🔵 Google' : '✈️ Telegram';
+            providerBadge.classList.remove('hidden');
+        } else {
+            providerBadge.classList.add('hidden');
+        }
+    }
+
+    const switchBtn = document.getElementById('switch-account-btn');
+    if (switchBtn) {
+        if (available.length > 1) {
+            const next = provider === 'google' ? 'telegram' : 'google';
+            switchBtn.textContent = `🔄 ${next === 'google' ? 'Google' : 'TG'}`;
+            switchBtn.title = `Переключиться на ${next === 'google' ? 'Google' : 'Telegram'}`;
+            switchBtn.classList.remove('hidden');
+            switchBtn.onclick = async () => {
+                setActiveProvider(next);
+                await verifySession();
+            };
+        } else {
+            switchBtn.classList.add('hidden');
         }
     }
 
@@ -371,9 +474,14 @@ async function logout() {
             // Ignore logout API error
         }
     }
-    currentUser = null;
-    clearTokens();
-    showLogin();
+    clearTokens(true);
+    const remaining = getActiveProvider();
+    if (remaining) {
+        await verifySession();
+    } else {
+        currentUser = null;
+        showLogin();
+    }
 }
 
 document.getElementById('logout-btn').addEventListener('click', logout);
