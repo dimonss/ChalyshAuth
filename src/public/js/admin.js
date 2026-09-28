@@ -7,6 +7,7 @@ let totalPages = 1;
 let searchDebounceTimer = null;
 let targetDeleteUserId = null;
 let refreshPromise = null;
+let cachedConfig = null;
 
 // Token Storage Helpers (standardized across projects on chalysh.pro)
 const APP_ID = 'chalysh_admin';
@@ -76,19 +77,32 @@ function setTokens(access, refresh, provider) {
     localStorage.setItem(APP_PROVIDER_KEY, target);
 }
 
-function clearTokens(onlyCurrent = true) {
-    const current = getActiveProvider();
-    if (current && onlyCurrent) {
-        localStorage.removeItem(`${current}_accessToken`);
-        localStorage.removeItem(`${current}_refreshToken`);
-        localStorage.removeItem(`${current}_user`);
-        const remaining = getActiveProvider();
-        if (remaining) {
-            localStorage.setItem(APP_PROVIDER_KEY, remaining);
-        } else {
-            localStorage.removeItem(APP_PROVIDER_KEY);
+function clearTokens(target) {
+    if (target === 'google') {
+        localStorage.removeItem('google_accessToken');
+        localStorage.removeItem('google_refreshToken');
+        localStorage.removeItem('google_user');
+        if (localStorage.getItem(APP_PROVIDER_KEY) === 'google') {
+            const remaining = hasTokensFor('telegram') ? 'telegram' : null;
+            if (remaining) {
+                localStorage.setItem(APP_PROVIDER_KEY, remaining);
+            } else {
+                localStorage.removeItem(APP_PROVIDER_KEY);
+            }
         }
-    } else {
+    } else if (target === 'telegram') {
+        localStorage.removeItem('telegram_accessToken');
+        localStorage.removeItem('telegram_refreshToken');
+        localStorage.removeItem('telegram_user');
+        if (localStorage.getItem(APP_PROVIDER_KEY) === 'telegram') {
+            const remaining = hasTokensFor('google') ? 'google' : null;
+            if (remaining) {
+                localStorage.setItem(APP_PROVIDER_KEY, remaining);
+            } else {
+                localStorage.removeItem(APP_PROVIDER_KEY);
+            }
+        }
+    } else if (target === 'all' || target === false) {
         localStorage.removeItem('google_accessToken');
         localStorage.removeItem('google_refreshToken');
         localStorage.removeItem('google_user');
@@ -96,6 +110,13 @@ function clearTokens(onlyCurrent = true) {
         localStorage.removeItem('telegram_refreshToken');
         localStorage.removeItem('telegram_user');
         localStorage.removeItem(APP_PROVIDER_KEY);
+    } else {
+        const current = getActiveProvider();
+        if (current) {
+            clearTokens(current);
+        } else {
+            clearTokens('all');
+        }
     }
 }
 
@@ -180,6 +201,7 @@ const btnNextPage = document.getElementById('btn-next-page');
 
 const userDialog = document.getElementById('user-dialog');
 const deleteDialog = document.getElementById('delete-dialog');
+const logoutDialog = document.getElementById('logout-dialog');
 
 // Toast Helper
 function showToast(message, type = 'info') {
@@ -235,6 +257,7 @@ async function init() {
         // Fetch public config
         const res = await fetch(`${API_BASE}/admin/config`);
         const config = await res.json();
+        cachedConfig = config;
 
         let hasTg = false;
         let hasGoogle = false;
@@ -457,24 +480,54 @@ function showDashboard() {
         }
     }
 
+    const connectOtherBtn = document.getElementById('connect-other-btn');
+    if (connectOtherBtn) {
+        if (available.length === 1) {
+            const nextLabel = available[0] === 'google' ? '+ ✈️ TG' : '+ 🔵 Google';
+            connectOtherBtn.textContent = nextLabel;
+            connectOtherBtn.title = `Подключить ${available[0] === 'google' ? 'Telegram' : 'Google'}`;
+            connectOtherBtn.classList.remove('hidden');
+            connectOtherBtn.onclick = () => {
+                openLogoutModal();
+            };
+        } else {
+            connectOtherBtn.classList.add('hidden');
+        }
+    }
+
     loadStats();
     loadUsers();
 }
 
-async function logout() {
-    const refreshToken = getRefreshToken();
-    if (refreshToken) {
-        try {
-            await fetch(`${API_BASE}/auth/logout`, {
+async function logout(target) {
+    const toRevoke = [];
+    if (target === 'google') {
+        const rt = localStorage.getItem('google_refreshToken');
+        if (rt) toRevoke.push(rt);
+    } else if (target === 'telegram') {
+        const rt = localStorage.getItem('telegram_refreshToken');
+        if (rt) toRevoke.push(rt);
+    } else if (target === 'all') {
+        const gRt = localStorage.getItem('google_refreshToken');
+        const tRt = localStorage.getItem('telegram_refreshToken');
+        if (gRt) toRevoke.push(gRt);
+        if (tRt) toRevoke.push(tRt);
+    } else {
+        const rt = getRefreshToken();
+        if (rt) toRevoke.push(rt);
+    }
+
+    await Promise.all(
+        toRevoke.map(rt =>
+            fetch(`${API_BASE}/auth/logout`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refreshToken })
-            });
-        } catch {
-            // Ignore logout API error
-        }
-    }
-    clearTokens(true);
+                body: JSON.stringify({ refreshToken: rt })
+            }).catch(() => {})
+        )
+    );
+
+    clearTokens(target || 'all');
     const remaining = getActiveProvider();
     if (remaining) {
         await verifySession();
@@ -484,7 +537,184 @@ async function logout() {
     }
 }
 
-document.getElementById('logout-btn').addEventListener('click', logout);
+function openLogoutModal() {
+    const container = document.getElementById('logout-dialog-content');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const available = getAvailableProviders();
+    const hasGoogle = available.includes('google');
+    const hasTelegram = available.includes('telegram');
+
+    if (hasGoogle && hasTelegram) {
+        const sub = document.createElement('div');
+        sub.style.cssText = 'font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: var(--text-muted); margin-bottom: 0.25rem;';
+        sub.textContent = 'Выберите действие:';
+        container.appendChild(sub);
+
+        // Google
+        const gRow = document.createElement('div');
+        gRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1rem; border-radius: var(--radius-md); background: var(--bg-primary); border: 1px solid var(--border);';
+        gRow.innerHTML = `
+            <div>
+                <div style="font-weight: 600; font-size: 0.875rem; color: #93c5fd;">🔵 Google</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">Завершить сессию Google. Telegram останется активным.</div>
+            </div>
+        `;
+        const gBtn = document.createElement('button');
+        gBtn.className = 'btn btn-ghost btn-sm';
+        gBtn.textContent = 'Выйти из Google';
+        gBtn.onclick = async () => {
+            gBtn.disabled = true;
+            await logout('google');
+            logoutDialog.close();
+        };
+        gRow.appendChild(gBtn);
+        container.appendChild(gRow);
+
+        // Telegram
+        const tRow = document.createElement('div');
+        tRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1rem; border-radius: var(--radius-md); background: var(--bg-primary); border: 1px solid var(--border);';
+        tRow.innerHTML = `
+            <div>
+                <div style="font-weight: 600; font-size: 0.875rem; color: #38bdf8;">✈️ Telegram</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">Завершить сессию Telegram. Google останется активным.</div>
+            </div>
+        `;
+        const tBtn = document.createElement('button');
+        tBtn.className = 'btn btn-ghost btn-sm';
+        tBtn.textContent = 'Выйти из Telegram';
+        tBtn.onclick = async () => {
+            tBtn.disabled = true;
+            await logout('telegram');
+            logoutDialog.close();
+        };
+        tRow.appendChild(tBtn);
+        container.appendChild(tRow);
+
+        // All
+        const allRow = document.createElement('div');
+        allRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1rem; border-radius: var(--radius-md); background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25);';
+        allRow.innerHTML = `
+            <div>
+                <div style="font-weight: 600; font-size: 0.875rem; color: #f87171;">🚪 Выйти со всех сразу</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">Полный выход из обоих аккаунтов во всех сервисах.</div>
+            </div>
+        `;
+        const allBtn = document.createElement('button');
+        allBtn.className = 'btn btn-danger btn-sm';
+        allBtn.textContent = 'Выйти со всех';
+        allBtn.onclick = async () => {
+            allBtn.disabled = true;
+            await logout('all');
+            logoutDialog.close();
+        };
+        allRow.appendChild(allBtn);
+        container.appendChild(allRow);
+    } else {
+        const currentName = hasGoogle ? '🔵 Google (активен)' : '✈️ Telegram (активен)';
+        const singleRow = document.createElement('div');
+        singleRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1rem; border-radius: var(--radius-md); background: var(--bg-primary); border: 1px solid var(--border);';
+        singleRow.innerHTML = `
+            <div>
+                <div style="font-weight: 600; font-size: 0.875rem; color: var(--text-primary);">${currentName}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">Текущая активная сессия</div>
+            </div>
+        `;
+        const outBtn = document.createElement('button');
+        outBtn.className = 'btn btn-danger btn-sm';
+        outBtn.textContent = 'Выйти со всех сервисов';
+        outBtn.onclick = async () => {
+            outBtn.disabled = true;
+            await logout('all');
+            logoutDialog.close();
+        };
+        singleRow.appendChild(outBtn);
+        container.appendChild(singleRow);
+
+        const connectBox = document.createElement('div');
+        connectBox.style.cssText = 'padding: 1rem; border-radius: var(--radius-md); background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); text-align: center; margin-top: 0.5rem;';
+        connectBox.innerHTML = `
+            <div style="font-weight: 600; font-size: 0.875rem; color: #a5b4fc; margin-bottom: 0.25rem;">Войти другим способом (без выхода)</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.875rem;">
+                ${hasGoogle ? 'Подключите Telegram, чтобы переключаться между ними:' : 'Подключите Google, чтобы переключаться между ними:'}
+            </div>
+            <div id="logout-other-widget" style="display: flex; justify-content: center; min-height: 40px; align-items: center;"></div>
+        `;
+        container.appendChild(connectBox);
+
+        setTimeout(() => {
+            const widgetEl = document.getElementById('logout-other-widget');
+            if (!widgetEl) return;
+            if (hasGoogle && cachedConfig?.telegramBotUsername) {
+                window.onTelegramModalAuth = async function (user) {
+                    try {
+                        const res = await fetch(`${API_BASE}/admin/auth/telegram`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(user)
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.message || 'Ошибка входа');
+                        setTokens(data.accessToken, data.refreshToken, 'telegram');
+                        localStorage.setItem('telegram_user', JSON.stringify(data.user));
+                        logoutDialog.close();
+                        showToast(`Telegram подключен (${data.user.firstName})`, 'success');
+                        await verifySession();
+                    } catch (err) {
+                        showToast(err.message, 'error');
+                    }
+                };
+
+                const script = document.createElement('script');
+                script.async = true;
+                script.src = 'https://telegram.org/js/telegram-widget.js?22';
+                script.setAttribute('data-telegram-login', cachedConfig.telegramBotUsername);
+                script.setAttribute('data-size', 'medium');
+                script.setAttribute('data-radius', '8');
+                script.setAttribute('data-onauth', 'onTelegramModalAuth(user)');
+                script.setAttribute('data-request-access', 'write');
+                widgetEl.appendChild(script);
+            } else if (!hasGoogle && cachedConfig?.googleClientId) {
+                const google = window.google;
+                if (google && google.accounts) {
+                    google.accounts.id.initialize({
+                        client_id: cachedConfig.googleClientId,
+                        callback: async (resp) => {
+                            try {
+                                const res = await fetch(`${API_BASE}/admin/auth/google`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ idToken: resp.credential })
+                                });
+                                const data = await res.json();
+                                if (!res.ok) throw new Error(data.message || 'Ошибка входа');
+                                setTokens(data.accessToken, data.refreshToken, 'google');
+                                localStorage.setItem('google_user', JSON.stringify(data.user));
+                                logoutDialog.close();
+                                showToast(`Google подключен (${data.user.firstName})`, 'success');
+                                await verifySession();
+                            } catch (err) {
+                                showToast(err.message, 'error');
+                            }
+                        }
+                    });
+                    google.accounts.id.renderButton(widgetEl, {
+                        theme: 'filled_black',
+                        size: 'medium',
+                        shape: 'pill'
+                    });
+                }
+            }
+        }, 50);
+    }
+
+    logoutDialog.showModal();
+}
+
+document.getElementById('logout-btn').addEventListener('click', () => openLogoutModal());
+document.getElementById('logout-dialog-close-btn').addEventListener('click', () => logoutDialog.close());
+document.getElementById('logout-dialog-cancel-btn').addEventListener('click', () => logoutDialog.close());
 
 // Load Statistics
 async function loadStats() {
